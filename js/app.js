@@ -1667,6 +1667,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (loadFromStorage()) {
         renderCompetitionsTable();
         generateTables();
+    } else if (typeof PRELOADED_CSV_FILES !== 'undefined' && PRELOADED_CSV_FILES.length > 0) {
+        // Auto-load baked-in data when no localStorage data exists
+        for (const file of PRELOADED_CSV_FILES) {
+            processUploadedFile(file.content, file.filename);
+        }
+        renderCompetitionsTable();
+        generateTables();
+        saveToStorage();
     }
     renderFixtureTracker();
 });

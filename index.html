@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blainroe Golf Club - GOY &amp; Eclectic Cup</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <img src="blainroe-anni-logo.png" alt="Blainroe Golf Club" class="club-logo">
+            <div>
+                <h1>Blainroe Golf Club</h1>
+                <p class="subtitle">Golfer of the Year &amp; Captain's Eclectic Cup</p>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <!-- Upload Section -->
+        <section id="upload-section" class="card">
+            <h2>📁 Upload Competition Data</h2>
+            <p class="help-text">Upload CSV exports from Handicap Master. You can upload multiple files at once.</p>
+            <div class="upload-area" id="upload-area">
+                <div class="upload-icon">📄</div>
+                <p>Drag &amp; drop CSV files here, or click to browse</p>
+                <input type="file" id="file-input" multiple accept=".csv" hidden>
+                <button class="btn btn-primary" onclick="document.getElementById('file-input').click()">Choose Files</button>
+            </div>
+        </section>
+
+        <!-- GOY Fixture Tracker -->
+        <section id="fixture-tracker" class="card" style="display:none">
+            <h2>📅 GOY Competition Tracker <span id="fixture-year-badge" class="year-badge"></span></h2>
+            <p class="help-text">Shows all GOY-qualifying competitions for the season. Competitions are auto-detected when you upload CSVs.</p>
+            <div id="fixture-tracker-content"></div>
+        </section>
+
+        <!-- Loaded Competitions -->
+        <section id="competitions-section" class="card" style="display:none">
+            <h2>📋 Loaded Competitions</h2>
+            <p class="help-text">GOY and Captain's flags are auto-set from the fixture list. You can override manually if needed.</p>
+            <div class="table-wrapper">
+                <table id="competitions-table">
+                    <thead>
+                        <tr>
+                            <th>Competition</th>
+                            <th>Date</th>
+                            <th>Players</th>
+                            <th>Type</th>
+                            <th>GOY</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <div class="actions-bar">
+                <button class="btn btn-primary" onclick="generateTables()">🏆 Generate Tables</button>
+                <button class="btn btn-secondary" onclick="clearAllData()">🗑️ Clear All</button>
+            </div>
+        </section>
+
+        <!-- Results Tabs -->
+        <section id="results-section" class="card" style="display:none">
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab('goy')">🏆 Golfer of the Year</button>
+                <button class="tab" onclick="switchTab('eclectic-gross')">⛳ Eclectic Gross</button>
+                <button class="tab" onclick="switchTab('eclectic-nett')">🎯 Eclectic Nett</button>
+                <button class="tab" onclick="switchTab('eclectic-insights')">📊 Gross Insights</button>
+                <button class="tab" onclick="switchTab('eclectic-nett-insights')">📊 Nett Insights</button>
+            </div>
+
+            <!-- GOY Table -->
+            <div id="tab-goy" class="tab-content active">
+                <div class="table-header">
+                    <h3 id="goy-title">Golfer of the Year</h3>
+                    <div class="export-buttons">
+                        <button class="btn btn-sm" onclick="exportHTML('goy')">📄 HTML</button>
+                        <button class="btn btn-sm" onclick="exportPDF('goy')">📑 PDF</button>
+                    </div>
+                </div>
+                <div class="table-wrapper" id="goy-table-container"></div>
+            </div>
+
+            <!-- Eclectic Gross Table -->
+            <div id="tab-eclectic-gross" class="tab-content">
+                <div class="table-header">
+                    <h3 id="eclectic-gross-title">Captain's Eclectic Cup (Gross)</h3>
+                    <div class="export-buttons">
+                        <button class="btn btn-sm" onclick="exportHTML('eclectic-gross')">📄 HTML</button>
+                        <button class="btn btn-sm" onclick="exportPDF('eclectic-gross')">📑 PDF</button>
+                    </div>
+                </div>
+                <div class="table-wrapper" id="eclectic-gross-table-container"></div>
+            </div>
+
+            <!-- Eclectic Nett Table -->
+            <div id="tab-eclectic-nett" class="tab-content">
+                <div class="table-header">
+                    <h3 id="eclectic-nett-title">Captain's Eclectic Cup (Nett)</h3>
+                    <div class="export-buttons">
+                        <button class="btn btn-sm" onclick="exportHTML('eclectic-nett')">📄 HTML</button>
+                        <button class="btn btn-sm" onclick="exportPDF('eclectic-nett')">📑 PDF</button>
+                    </div>
+                </div>
+                <div class="table-wrapper" id="eclectic-nett-table-container"></div>
+            </div>
+
+            <!-- Eclectic Insights (Gross) -->
+            <div id="tab-eclectic-insights" class="tab-content">
+                <div class="table-header">
+                    <h3>📊 Gross Eclectic Insights</h3>
+                </div>
+                <div id="eclectic-insights-container"></div>
+            </div>
+
+            <!-- Eclectic Insights (Nett) -->
+            <div id="tab-eclectic-nett-insights" class="tab-content">
+                <div class="table-header">
+                    <h3>📊 Nett Eclectic Insights</h3>
+                </div>
+                <div id="eclectic-nett-insights-container"></div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>Blainroe Golf Club &bull; All data processed locally in your browser</p>
+    </footer>
+
+    <script src="js/fixtures.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>

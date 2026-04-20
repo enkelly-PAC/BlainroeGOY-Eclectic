@@ -482,8 +482,6 @@ function calculateEclecticFromScorecards() {
     });
     const latestHandicap = {};
     for (const comp of sortedComps) {
-        const compName = (comp.info.name || '').toLowerCase();
-        if (compName.includes('medal')) continue; // skip blue tee comps — use white tee handicaps only
         if (comp.handicaps) {
             for (const [name, hcap] of Object.entries(comp.handicaps)) {
                 latestHandicap[name] = hcap; // later comps overwrite earlier

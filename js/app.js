@@ -776,11 +776,20 @@ function renderEclecticNettTable(data) {
     html += '<th class="total-col">Gross</th><th>H\'cap</th><th class="total-col">Net</th></tr>';
     html += '</thead><tbody>';
 
-    // Positions are from the original CSV sort (by net)
+    // Assign positions based on net sort
+    let pos = 1;
+    for (let i = 0; i < players.length; i++) {
+        const p = players[i];
+        if (p.net === null) { p.nettPos = '-'; }
+        else if (i > 0 && p.net === players[i-1].net) { p.nettPos = players[i-1].nettPos; }
+        else { p.nettPos = pos; }
+        pos++;
+    }
+
     for (const p of players) {
-        const rankClass = p.position <= 3 ? ' class="rank-' + p.position + '"' : '';
+        const rankClass = p.nettPos <= 3 ? ' class="rank-' + p.nettPos + '"' : '';
         html += '<tr' + rankClass + '>';
-        html += '<td>' + p.position + '</td>';
+        html += '<td>' + p.nettPos + '</td>';
         html += '<td class="player-name">' + escapeHtml(displayName(p.name)) + '</td>';
         html += '<td class="rnds-col">' + p.rounds + '</td>';
 
@@ -1529,13 +1538,13 @@ function exportPDF(type) {
     const printWindow = window.open('', '_blank');
     printWindow.document.write('<!DOCTYPE html>\n<html>\n<head>\n<title>' + title + '</title>\n' +
         '<style>\n' +
-        '@page { size: landscape; margin: 1cm; }\n' +
+        '@page { size: landscape; margin: 1cm; margin-top: 0.5cm; margin-bottom: 0.5cm; }\n' +
         'body { font-family: Arial, sans-serif; margin: 1rem; color: #1a2e1a; }\n' +
         'h1 { font-size: 1.3rem; color: #1a5e1a; text-align: center; margin-bottom: 0.25rem; }\n' +
         'h2 { font-size: 1rem; color: #333; text-align: center; font-weight: 400; margin-bottom: 1rem; }\n' +
         'table { width: 100%; border-collapse: collapse; font-size: 0.75rem; }\n' +
         'thead { background: #1a5e1a; color: white; -webkit-print-color-adjust: exact; print-color-adjust: exact; }\n' +
-        'th { padding: 4px 3px; text-align: center; font-weight: 600; font-size: 0.7rem; }\n' +
+        'th { padding: 5px 4px; text-align: center; font-weight: 700; font-size: 0.8rem; }\n' +
         'td { padding: 3px; text-align: center; border-bottom: 1px solid #ddd; -webkit-print-color-adjust: exact; print-color-adjust: exact; }\n' +
         'td:nth-child(2) { text-align: left; }\n' +
         'tr:nth-child(even) { background: #f5f5f5; -webkit-print-color-adjust: exact; print-color-adjust: exact; }\n' +

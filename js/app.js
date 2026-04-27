@@ -1582,6 +1582,7 @@ function saveToStorage() {
     try {
         const data = {
             version: 2,
+            preloadedVersion: (typeof PRELOADED_DATA_VERSION !== 'undefined') ? PRELOADED_DATA_VERSION : 0,
             competitions: appState.competitions,
             eclecticData: appState.eclecticData,
             savedAt: new Date().toISOString()
@@ -1673,11 +1674,27 @@ function renderFixtureTracker() {
 
 document.addEventListener('DOMContentLoaded', () => {
     initUI();
-    if (loadFromStorage()) {
+    // Check if preloaded data has been updated since last save
+    const hasPreloaded = typeof PRELOADED_CSV_FILES !== 'undefined' && PRELOADED_CSV_FILES.length > 0;
+    const currentPreloadedVersion = (typeof PRELOADED_DATA_VERSION !== 'undefined') ? PRELOADED_DATA_VERSION : 0;
+    let storedPreloadedVersion = 0;
+    try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+            const data = JSON.parse(raw);
+            storedPreloadedVersion = data.preloadedVersion || 0;
+        }
+    } catch (e) { /* ignore */ }
+    const preloadedDataChanged = hasPreloaded && currentPreloadedVersion > storedPreloadedVersion;
+    if (preloadedDataChanged) {
+        // Clear stale localStorage when preloaded data has been updated
+        localStorage.removeItem(STORAGE_KEY);
+    }
+    if (!preloadedDataChanged && loadFromStorage()) {
         renderCompetitionsTable();
         generateTables();
-    } else if (typeof PRELOADED_CSV_FILES !== 'undefined' && PRELOADED_CSV_FILES.length > 0) {
-        // Auto-load baked-in data when no localStorage data exists
+    } else if (hasPreloaded) {
+        // Auto-load baked-in data when no localStorage data exists or data was refreshed
         for (const file of PRELOADED_CSV_FILES) {
             processUploadedFile(file.content, file.filename);
         }

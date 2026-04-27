@@ -689,19 +689,19 @@ function renderEclecticGrossTable(data) {
 
     html += '<table class="eclectic-table"><thead>';
 
-    // Par row
-    html += '<tr class="par-row"><th></th><th></th><th></th>';
-    for (let h = 0; h < 18; h++) {
-        html += '<th>' + COURSE.par[h] + '</th>';
-    }
-    html += '<th></th></tr>';
-
     // Hole numbers row
     html += '<tr><th>Overall</th><th>Name</th><th class="rnds-col">Rounds</th>';
     for (let h = 1; h <= 18; h++) {
         html += '<th>' + h + '</th>';
     }
     html += '<th class="total-col">Gross</th></tr>';
+
+    // Par row
+    html += '<tr class="par-row"><th></th><th style="text-align:left">Par</th><th></th>';
+    for (let h = 0; h < 18; h++) {
+        html += '<th>' + COURSE.par[h] + '</th>';
+    }
+    html += '<th>72</th></tr>';
     html += '</thead><tbody>';
 
     // Re-assign positions based on gross sort
@@ -761,19 +761,19 @@ function renderEclecticNettTable(data) {
 
     html += '<table class="eclectic-table"><thead>';
 
-    // Par row
-    html += '<tr class="par-row"><th></th><th></th><th></th>';
-    for (let h = 0; h < 18; h++) {
-        html += '<th>' + COURSE.par[h] + '</th>';
-    }
-    html += '<th></th><th></th><th></th></tr>';
-
     // Hole numbers + column headers
     html += '<tr><th>Overall</th><th>Name</th><th class="rnds-col">Rounds</th>';
     for (let h = 1; h <= 18; h++) {
         html += '<th>' + h + '</th>';
     }
     html += '<th class="total-col">Gross</th><th>H\'cap</th><th class="total-col">Net</th></tr>';
+
+    // Par row
+    html += '<tr class="par-row"><th></th><th style="text-align:left">Par</th><th></th>';
+    for (let h = 0; h < 18; h++) {
+        html += '<th>' + COURSE.par[h] + '</th>';
+    }
+    html += '<th>72</th><th></th><th></th></tr>';
     html += '</thead><tbody>';
 
     // Assign positions based on net sort

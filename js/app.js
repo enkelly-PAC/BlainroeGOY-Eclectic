@@ -1544,7 +1544,7 @@ function exportPDF(type) {
         'h2 { font-size: 1rem; color: #333; text-align: center; font-weight: 400; margin-bottom: 1rem; }\n' +
         'table { width: 100%; border-collapse: collapse; font-size: 0.75rem; }\n' +
         'thead { background: #1a5e1a; color: white; -webkit-print-color-adjust: exact; print-color-adjust: exact; }\n' +
-        'th { padding: 5px 4px; text-align: center; font-weight: 700; font-size: 0.8rem; }\n' +
+        'th { padding: 6px 5px; text-align: center; font-weight: 800; font-size: 0.85rem; color: white; text-shadow: 0 0 2px rgba(0,0,0,0.3); -webkit-print-color-adjust: exact; print-color-adjust: exact; }\n' +
         'td { padding: 3px; text-align: center; border-bottom: 1px solid #ddd; -webkit-print-color-adjust: exact; print-color-adjust: exact; }\n' +
         'td:nth-child(2) { text-align: left; }\n' +
         'tr:nth-child(even) { background: #f5f5f5; -webkit-print-color-adjust: exact; print-color-adjust: exact; }\n' +

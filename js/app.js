@@ -180,7 +180,7 @@ function parseCompetitionReportCSV(text) {
             const val = fields[f];
             if (!val) continue;
             // Stableford format: "39 pts (01)" or "39 (01)"
-            const stablefordMatch = val.match(/(\d+)\s*(?:pts)?\s*\((\d+)\)/);
+            const stablefordMatch = val.match(/(\d+)\s*(?:pts\.?)?\s*\((\d+)\)/);
             if (stablefordMatch) {
                 score = parseInt(stablefordMatch[1], 10);
                 playingHandicap = parseInt(stablefordMatch[2], 10);

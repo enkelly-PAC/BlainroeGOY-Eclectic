@@ -102,9 +102,9 @@ thead { background: #1a5e1a; color: white; }
 th {
     padding: 0.6rem 0.5rem;
     text-align: center;
-    font-weight: 600;
+    font-weight: 700;
     white-space: nowrap;
-    font-size: 0.8rem;
+    font-size: 0.85rem;
 }
 th:first-child, th:nth-child(2) { text-align: left; }
 td {
@@ -483,7 +483,7 @@ footer {
     padding: 0.5rem;
 }
 .eclectic-table { font-size: 0.82rem; }
-.eclectic-table th { padding: 0.4rem 0.3rem; font-size: 0.78rem; white-space: nowrap; }
+.eclectic-table th { padding: 0.4rem 0.3rem; font-size: 0.85rem; font-weight: 700; white-space: nowrap; }
 .eclectic-table td { padding: 0.35rem 0.3rem; min-width: 28px; }
 .eclectic-table .player-name { text-align: left; font-weight: 600; white-space: nowrap; }
 .eclectic-table .rnds-col { min-width: 36px; }

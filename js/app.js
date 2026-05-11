@@ -524,6 +524,22 @@ function calculateEclecticFromScorecards() {
         const gross = scores.reduce((a, b) => a + b, 0);
         const net = gross - handicap;
 
+        // Countback (CSS) values — used as tiebreakers within tied positions.
+        // Best = fewest strokes on each segment. Computed for both gross and net.
+        const back9Gross = scores.slice(9, 18).reduce((a, b) => a + b, 0);
+        const back6Gross = scores.slice(12, 18).reduce((a, b) => a + b, 0);
+        const back3Gross = scores.slice(15, 18).reduce((a, b) => a + b, 0);
+        const lastHoleGross = scores[17];
+
+        const netScores = [];
+        for (let h = 0; h < 18; h++) {
+            netScores.push(scores[h] - getStrokesOnHole(handicap, h));
+        }
+        const back9Net = netScores.slice(9, 18).reduce((a, b) => a + b, 0);
+        const back6Net = netScores.slice(12, 18).reduce((a, b) => a + b, 0);
+        const back3Net = netScores.slice(15, 18).reduce((a, b) => a + b, 0);
+        const lastHoleNet = netScores[17];
+
         players.push({
             name,
             position: 0,
@@ -533,7 +549,9 @@ function calculateEclecticFromScorecards() {
             handicap,
             handicapDisplay: String(handicap),
             net,
-            countback: ''
+            countback: '',
+            back9Gross, back6Gross, back3Gross, lastHoleGross,
+            back9Net, back6Net, back3Net, lastHoleNet
         });
     }
 
@@ -673,12 +691,17 @@ function renderEclecticGrossTable(data) {
         return '<p class="status-msg info">No Eclectic data. Upload an Eclectic CSV from Handicap Master.</p>';
     }
 
-    // Sort by gross ascending (null gross goes to end)
+    // Sort by gross ascending; within ties use CSS countback
+    // (best back 9, then back 6, then back 3, then last hole — all "fewest strokes wins").
     const players = [...data.players].sort((a, b) => {
         if (a.gross === null && b.gross === null) return 0;
         if (a.gross === null) return 1;
         if (b.gross === null) return -1;
-        return a.gross - b.gross;
+        if (a.gross !== b.gross) return a.gross - b.gross;
+        if (a.back9Gross !== b.back9Gross) return a.back9Gross - b.back9Gross;
+        if (a.back6Gross !== b.back6Gross) return a.back6Gross - b.back6Gross;
+        if (a.back3Gross !== b.back3Gross) return a.back3Gross - b.back3Gross;
+        return a.lastHoleGross - b.lastHoleGross;
     });
 
     // Find the winner
@@ -745,13 +768,17 @@ function renderEclecticNettTable(data) {
         return '<p class="status-msg info">No Eclectic data. Upload an Eclectic CSV from Handicap Master.</p>';
     }
 
-    // Sort by net ascending (null net goes to end)
+    // Sort by net ascending; within ties use CSS countback on NET scores
+    // (best back 9, then back 6, then back 3, then last hole — all "fewest strokes wins").
     const players = [...data.players].sort((a, b) => {
         if (a.net === null && b.net === null) return 0;
         if (a.net === null) return 1;
         if (b.net === null) return -1;
         if (a.net !== b.net) return a.net - b.net;
-        return 0;
+        if (a.back9Net !== b.back9Net) return a.back9Net - b.back9Net;
+        if (a.back6Net !== b.back6Net) return a.back6Net - b.back6Net;
+        if (a.back3Net !== b.back3Net) return a.back3Net - b.back3Net;
+        return a.lastHoleNet - b.lastHoleNet;
     });
 
     const winner = players.length > 0 && players[0].net !== null ? players[0].name : '';

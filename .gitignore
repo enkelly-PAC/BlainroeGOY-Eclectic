@@ -6,3 +6,5 @@ node_modules/
 h2h-smoketest.js
 compare-pals.js
 _peek.js
+find-albatross2.js
+albatross-smoketest.js

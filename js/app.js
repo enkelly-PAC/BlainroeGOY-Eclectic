@@ -1313,20 +1313,33 @@ function renderNettEclecticInsights(data) {
     // Per-player nett shot tallies on the eclectic card (albatross/eagle/birdie/par)
     const playerNettTallies = nettPlayers.map(p => {
         let na = 0, ne = 0, nb = 0, np = 0, filled = 0;
+        const albatrossDetails = [];
         for (let h = 0; h < 18; h++) {
             const s = p.scores[h];
             if (s === null || s === undefined) continue;
             const strokes = getStrokesOnHole(p.handicap, h);
             const diff = (s - strokes) - COURSE.par[h];
             filled++;
-            if (diff <= -3) na++;
+            if (diff <= -3) {
+                na++;
+                albatrossDetails.push({
+                    hole: h + 1,
+                    par: COURSE.par[h],
+                    si: COURSE.si[h],
+                    gross: s,
+                    strokes,
+                    nett: s - strokes,
+                    diff
+                });
+            }
             else if (diff === -2) ne++;
             else if (diff === -1) nb++;
             else if (diff === 0) np++;
         }
         return {
             name: p.name, handicap: p.handicap, net: p.net, gross: p.gross,
-            nettAlbatrosses: na, nettEagles: ne, nettBirdies: nb, nettPars: np, filledHoles: filled
+            nettAlbatrosses: na, nettEagles: ne, nettBirdies: nb, nettPars: np, filledHoles: filled,
+            albatrossDetails
         };
     });
     const totalNettAlbatrosses = playerNettTallies.reduce((a, p) => a + p.nettAlbatrosses, 0);
@@ -1433,13 +1446,69 @@ function renderNettEclecticInsights(data) {
 
     // Nett Albatross Club (rarer than eagle - diff <= -3)
     if (nettAlbatrossPlayers.length > 0) {
-        html += '<div class="insight-card">';
+        // Helper: find the competition(s) where this player shot exactly `gross` on hole h (1-based)
+        function findAlbatrossRound(playerName, hole, gross) {
+            const matches = [];
+            if (!appState || !Array.isArray(appState.competitions)) return matches;
+            const target = (playerName || '').trim().toLowerCase();
+            for (const comp of appState.competitions) {
+                if (!comp || !comp.scorecards) continue;
+                for (const cardName of Object.keys(comp.scorecards)) {
+                    if (cardName.trim().toLowerCase() !== target) continue;
+                    const card = comp.scorecards[cardName];
+                    if (!card) continue;
+                    if (card[hole - 1] === gross) {
+                        matches.push({
+                            name: (comp.info && comp.info.name) || comp.filename || 'Unknown competition',
+                            date: (comp.info && comp.info.date) || ''
+                        });
+                    }
+                }
+            }
+            return matches;
+        }
+
+        html += '<div class="insight-card insight-wide">';
         html += '<h4>🦅✨ Nett Albatross Club</h4>';
         html += '<p class="insight-subtitle">Three under net on a single hole — the rarest shot of the season</p>';
-        html += '<table class="insight-table"><thead><tr><th>Player</th><th>Albatross</th></tr></thead><tbody>';
+        html += '<table class="insight-table"><thead><tr>'
+            + '<th>Player</th><th>H\'cap</th><th>Hole</th><th>Par</th>'
+            + '<th>Gross</th><th>Strokes</th><th>Nett</th><th>Competition</th>'
+            + '</tr></thead><tbody>';
         for (const p of nettAlbatrossPlayers) {
-            html += '<tr><td>' + escapeHtml(displayName(p.name)) + '</td>';
-            html += '<td><strong>🦅 ' + p.nettAlbatrosses + '</strong></td></tr>';
+            const details = p.albatrossDetails && p.albatrossDetails.length
+                ? p.albatrossDetails
+                : [null];
+            for (let i = 0; i < details.length; i++) {
+                const d = details[i];
+                html += '<tr>';
+                if (i === 0) {
+                    const rowspan = details.length > 1 ? ' rowspan="' + details.length + '"' : '';
+                    html += '<td' + rowspan + '>' + escapeHtml(displayName(p.name)) + '</td>';
+                    html += '<td' + rowspan + '>' + p.handicap + '</td>';
+                }
+                if (d) {
+                    html += '<td>' + d.hole + ' <span style="color:#888;font-size:0.85em">(SI ' + d.si + ')</span></td>';
+                    html += '<td>' + d.par + '</td>';
+                    html += '<td><strong>' + d.gross + '</strong></td>';
+                    html += '<td>' + d.strokes + '</td>';
+                    html += '<td><strong>🦅 ' + d.nett + '</strong></td>';
+                    const rounds = findAlbatrossRound(p.name, d.hole, d.gross);
+                    let compCell;
+                    if (rounds.length === 0) {
+                        compCell = '<em style="color:#888">eclectic-only (round not traced)</em>';
+                    } else if (rounds.length === 1) {
+                        const r = rounds[0];
+                        compCell = escapeHtml(r.name) + (r.date ? '<br><span style="color:#888;font-size:0.85em">' + escapeHtml(r.date) + '</span>' : '');
+                    } else {
+                        compCell = escapeHtml(rounds[0].name) + ' <span style="color:#888">(+' + (rounds.length - 1) + ' other round' + (rounds.length > 2 ? 's' : '') + ')</span>';
+                    }
+                    html += '<td>' + compCell + '</td>';
+                } else {
+                    html += '<td colspan="6"><strong>🦅 ' + p.nettAlbatrosses + '</strong></td>';
+                }
+                html += '</tr>';
+            }
         }
         html += '</tbody></table></div>';
     }

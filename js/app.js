@@ -1586,13 +1586,52 @@ function getTableTitle(type) {
         case 'goy': return 'Golfer of the Year ' + year;
         case 'eclectic-gross': return "Captain's Eclectic Cup (Gross) " + year;
         case 'eclectic-nett': return "Captain's Eclectic Cup (Nett) " + year;
+        case 'eclectic-insights': return "Gross Eclectic Insights " + year;
+        case 'eclectic-nett-insights': return "Nett Eclectic Insights " + year;
     }
 }
 
+function getExportContainerId(type) {
+    // Insights tabs use a different container suffix than the table tabs.
+    if (type === 'eclectic-insights') return 'eclectic-insights-container';
+    if (type === 'eclectic-nett-insights') return 'eclectic-nett-insights-container';
+    return type + '-table-container';
+}
+
+function isInsightsExport(type) {
+    return type === 'eclectic-insights' || type === 'eclectic-nett-insights';
+}
+
+// CSS injected into HTML / PDF exports for insights tabs so .insights-grid,
+// .insight-card and friends render standalone (without the main site stylesheet).
+function getInsightsExportCSS(forPrint) {
+    const cardBreak = forPrint ? 'break-inside: avoid; page-break-inside: avoid;' : '';
+    const printColor = forPrint ? ' -webkit-print-color-adjust: exact; print-color-adjust: exact;' : '';
+    return [
+        '.insights-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1rem; margin-top: 0.5rem; }',
+        '.insight-card { background: white; border: 1px solid #d0d0d0; border-radius: 6px; padding: 0.85rem 1rem; box-shadow: 0 1px 2px rgba(0,0,0,0.05); ' + cardBreak + ' }',
+        '.insight-wide { grid-column: 1 / -1; }',
+        '.insight-card h4 { margin: 0 0 0.6rem 0; color: #1a5e1a; font-size: 1rem; font-weight: 700; }',
+        '.insight-stats { display: flex; flex-wrap: wrap; gap: 1rem; justify-content: center; }',
+        '.stat-item { display: flex; flex-direction: column; align-items: center; min-width: 70px; }',
+        '.stat-num { font-size: 1.5rem; font-weight: 700; color: #1a5e1a; }',
+        '.stat-label { font-size: 0.72rem; color: #888; text-align: center; }',
+        '.insight-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }',
+        '.insight-table th { background: #e8f0e8; color: #333; padding: 0.35rem 0.5rem; text-align: center; font-weight: 600; font-size: 0.72rem; border-bottom: 2px solid #c0d0c0;' + printColor + ' }',
+        '.insight-table td { padding: 0.3rem 0.5rem; text-align: center; border-bottom: 1px solid #eee;' + printColor + ' }',
+        '.insight-table td:first-child, .insight-table th:first-child { text-align: left; }',
+        '.insight-table td:nth-child(2), .insight-table th:nth-child(2) { text-align: left; }',
+        '.insight-subtitle { font-size: 0.78rem; color: #888; margin: -0.25rem 0 0.5rem 0; }',
+        '.record-holder { font-size: 0.65rem; color: #555; }',
+        '.par-row td, .par-row th { background: #f4f8f4; font-weight: 600;' + printColor + ' }'
+    ].join('\n');
+}
+
 function exportHTML(type) {
-    const container = document.getElementById(type + '-table-container');
+    const container = document.getElementById(getExportContainerId(type));
     const tableHTML = container.innerHTML;
     const title = getTableTitle(type);
+    const insights = isInsightsExport(type);
 
     const html = '<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="UTF-8">\n' +
         '<title>' + title + ' - Blainroe Golf Club</title>\n' +
@@ -1612,6 +1651,7 @@ function exportHTML(type) {
         '.eclectic-title-bar { text-align: center; font-size: 1.2rem; font-weight: 700; color: #1a5e1a; margin-bottom: 1rem; }\n' +
         '.comp-col-header { writing-mode: vertical-lr; text-orientation: mixed; transform: rotate(180deg); font-size: 0.7rem; }\n' +
         'footer { text-align: center; margin-top: 2rem; color: #888; font-size: 0.8rem; }\n' +
+        (insights ? getInsightsExportCSS(false) + '\n' : '') +
         '</style>\n</head>\n<body>\n' +
         '<h1>\u26f3 Blainroe Golf Club</h1>\n' +
         '<h2>' + title + '</h2>\n' +
@@ -1623,8 +1663,9 @@ function exportHTML(type) {
 }
 
 function exportPDF(type) {
-    const container = document.getElementById(type + '-table-container');
+    const container = document.getElementById(getExportContainerId(type));
     const title = getTableTitle(type);
+    const insights = isInsightsExport(type);
     const printWindow = window.open('', '_blank');
     printWindow.document.write('<!DOCTYPE html>\n<html>\n<head>\n<title>' + title + '</title>\n' +
         '<style>\n' +
@@ -1644,6 +1685,7 @@ function exportPDF(type) {
         '.eclectic-title-bar { text-align: center; font-size: 1.1rem; font-weight: 700; color: #1a5e1a; margin-bottom: 0.75rem; }\n' +
         '.comp-col-header { writing-mode: vertical-lr; text-orientation: mixed; transform: rotate(180deg); font-size: 0.65rem; }\n' +
         'footer { text-align: center; margin-top: 1rem; color: #888; font-size: 0.7rem; }\n' +
+        (insights ? getInsightsExportCSS(true) + '\n' : '') +
         '</style>\n</head>\n<body>\n' +
         '<h1>\u26f3 Blainroe Golf Club</h1>\n' +
         '<h2>' + title + '</h2>\n' +

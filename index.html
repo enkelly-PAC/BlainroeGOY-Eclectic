@@ -112,6 +112,10 @@
             <div id="tab-eclectic-insights" class="tab-content">
                 <div class="table-header">
                     <h3>📊 Gross Eclectic Insights</h3>
+                    <div class="export-buttons">
+                        <button class="btn btn-sm" onclick="exportHTML('eclectic-insights')">📄 HTML</button>
+                        <button class="btn btn-sm" onclick="exportPDF('eclectic-insights')">📑 PDF</button>
+                    </div>
                 </div>
                 <div id="eclectic-insights-container"></div>
             </div>
@@ -120,6 +124,10 @@
             <div id="tab-eclectic-nett-insights" class="tab-content">
                 <div class="table-header">
                     <h3>📊 Nett Eclectic Insights</h3>
+                    <div class="export-buttons">
+                        <button class="btn btn-sm" onclick="exportHTML('eclectic-nett-insights')">📄 HTML</button>
+                        <button class="btn btn-sm" onclick="exportPDF('eclectic-nett-insights')">📑 PDF</button>
+                    </div>
                 </div>
                 <div id="eclectic-nett-insights-container"></div>
             </div>
@@ -132,6 +140,6 @@
 
     <script src="js/fixtures.js"></script>
     <script src="js/preloaded-data.js"></script>
-    <script src="js/app.js?v=8"></script>
+    <script src="js/app.js?v=9"></script>
 </body>
 </html>

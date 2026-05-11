@@ -1872,14 +1872,15 @@ function initPalsSearch() {
         const all = getAllPlayerNames();
         const needle = q.trim().toLowerCase();
         if (!needle) {
-            renderResults(all.slice(0, 20));
+            // No query → no dropdown. Avoids looking like a canned list and keeps the picker quiet until the user types.
+            closeDropdown();
             return;
         }
         const matches = all.filter(n => n.toLowerCase().includes(needle)).slice(0, 30);
         renderResults(matches);
     }
 
-    input.addEventListener('focus', () => search(input.value));
+    input.addEventListener('focus', () => { if (input.value.trim()) search(input.value); });
     input.addEventListener('input', () => { activeIndex = -1; search(input.value); });
     input.addEventListener('blur', () => setTimeout(closeDropdown, 150));
     input.addEventListener('keydown', (e) => {

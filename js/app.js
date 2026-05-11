@@ -913,7 +913,22 @@ function renderEclecticInsights(data) {
     }
 
     const players = data.players;
-    const completePlayers = players.filter(p => p.gross !== null).sort((a, b) => a.gross - b.gross);
+    const completePlayers = players.filter(p => p.gross !== null).sort((a, b) => {
+        if (a.gross !== b.gross) return a.gross - b.gross;
+        if (a.back9Gross !== b.back9Gross) return a.back9Gross - b.back9Gross;
+        if (a.back6Gross !== b.back6Gross) return a.back6Gross - b.back6Gross;
+        if (a.back3Gross !== b.back3Gross) return a.back3Gross - b.back3Gross;
+        return a.lastHoleGross - b.lastHoleGross;
+    });
+    // Leader's countback note (compared to whoever is closest behind on equal gross)
+    let grossLeaderTieNote = '';
+    if (completePlayers.length > 1 && completePlayers[0].gross === completePlayers[1].gross) {
+        const a = completePlayers[0], b = completePlayers[1];
+        if (a.back9Gross !== b.back9Gross)      grossLeaderTieNote = 'last 9';
+        else if (a.back6Gross !== b.back6Gross) grossLeaderTieNote = 'last 6';
+        else if (a.back3Gross !== b.back3Gross) grossLeaderTieNote = 'last 3';
+        else if (a.lastHoleGross !== b.lastHoleGross) grossLeaderTieNote = 'last hole';
+    }
     const totalPlayers = players.length;
     const year = data.year || new Date().getFullYear();
 
@@ -1036,7 +1051,7 @@ function renderEclecticInsights(data) {
         html += '<div class="insight-stats">';
         html += '<div class="stat-item"><span class="stat-num">' + completePlayers.length + '</span><span class="stat-label">Full Cards</span></div>';
         html += '<div class="stat-item"><span class="stat-num">' + completePlayers[0].gross + '</span><span class="stat-label">Best Gross</span></div>';
-        html += '<div class="stat-item"><span class="stat-num">' + escapeHtml(displayName(completePlayers[0].name)) + '</span><span class="stat-label">Gross Leader</span></div>';
+        html += '<div class="stat-item"><span class="stat-num">' + escapeHtml(displayName(completePlayers[0].name)) + (grossLeaderTieNote ? ' <span class="tie-note">(' + grossLeaderTieNote + ')</span>' : '') + '</span><span class="stat-label">Gross Leader</span></div>';
         const avgGross = (completePlayers.reduce((a, p) => a + p.gross, 0) / completePlayers.length).toFixed(1);
         html += '<div class="stat-item"><span class="stat-num">' + avgGross + '</span><span class="stat-label">Avg Gross</span></div>';
         const avgGrossHcap = (completePlayers.reduce((a, p) => a + (p.handicap || 0), 0) / completePlayers.length).toFixed(1);
@@ -1216,7 +1231,22 @@ function renderNettEclecticInsights(data) {
     const coursePar = COURSE.par.reduce((a, b) => a + b, 0);
 
     // Sort by nett
-    const byNett = [...nettPlayers].sort((a, b) => a.net - b.net);
+    const byNett = [...nettPlayers].sort((a, b) => {
+        if (a.net !== b.net) return a.net - b.net;
+        if (a.back9Net !== b.back9Net) return a.back9Net - b.back9Net;
+        if (a.back6Net !== b.back6Net) return a.back6Net - b.back6Net;
+        if (a.back3Net !== b.back3Net) return a.back3Net - b.back3Net;
+        return a.lastHoleNet - b.lastHoleNet;
+    });
+    // Leader's countback note (compared to whoever is closest behind on equal net)
+    let nettLeaderTieNote = '';
+    if (byNett.length > 1 && byNett[0].net === byNett[1].net) {
+        const a = byNett[0], b = byNett[1];
+        if (a.back9Net !== b.back9Net)      nettLeaderTieNote = 'last 9';
+        else if (a.back6Net !== b.back6Net) nettLeaderTieNote = 'last 6';
+        else if (a.back3Net !== b.back3Net) nettLeaderTieNote = 'last 3';
+        else if (a.lastHoleNet !== b.lastHoleNet) nettLeaderTieNote = 'last hole';
+    }
 
     // Handicap advantage — who benefits most from their handicap
     const handicapValue = nettPlayers.map(p => {
@@ -1340,7 +1370,7 @@ function renderNettEclecticInsights(data) {
     html += '<div class="insight-stats">';
     html += '<div class="stat-item"><span class="stat-num">' + nettPlayers.length + '</span><span class="stat-label">Full Nett Cards</span></div>';
     html += '<div class="stat-item"><span class="stat-num">' + byNett[0].net + '</span><span class="stat-label">Best Nett</span></div>';
-    html += '<div class="stat-item"><span class="stat-num">' + escapeHtml(displayName(byNett[0].name)) + '</span><span class="stat-label">Nett Leader</span></div>';
+    html += '<div class="stat-item"><span class="stat-num">' + escapeHtml(displayName(byNett[0].name)) + (nettLeaderTieNote ? ' <span class="tie-note">(' + nettLeaderTieNote + ')</span>' : '') + '</span><span class="stat-label">Nett Leader</span></div>';
     const avgNett = (nettPlayers.reduce((a, p) => a + p.net, 0) / nettPlayers.length).toFixed(1);
     html += '<div class="stat-item"><span class="stat-num">' + avgNett + '</span><span class="stat-label">Avg Nett</span></div>';
     const avgHcap = (nettPlayers.reduce((a, p) => a + p.handicap, 0) / nettPlayers.length).toFixed(1);

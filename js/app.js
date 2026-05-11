@@ -741,11 +741,30 @@ function renderEclecticGrossTable(data) {
         pos++;
     }
 
+    // Annotate countback level for tied players. Compare each player to its
+    // neighbour in the same tied group (preferring the player above, falling
+    // back to the player below for the top of a cluster). The deepest metric
+    // that differs is the annotation. Truly identical players get no note.
+    for (let i = 0; i < players.length; i++) {
+        const p = players[i];
+        p.grossTieNote = '';
+        if (p.gross === null) continue;
+        let nb = null;
+        if (i > 0 && players[i-1].gross === p.gross) nb = players[i-1];
+        else if (i + 1 < players.length && players[i+1].gross === p.gross) nb = players[i+1];
+        if (!nb) continue;
+        if (p.back9Gross !== nb.back9Gross)      p.grossTieNote = 'last 9';
+        else if (p.back6Gross !== nb.back6Gross) p.grossTieNote = 'last 6';
+        else if (p.back3Gross !== nb.back3Gross) p.grossTieNote = 'last 3';
+        else if (p.lastHoleGross !== nb.lastHoleGross) p.grossTieNote = 'last hole';
+    }
+
     for (const p of players) {
         const rankClass = p.grossPos <= 3 ? ' class="rank-' + p.grossPos + '"' : '';
         html += '<tr' + rankClass + '>';
         html += '<td>' + p.grossPos + '</td>';
-        html += '<td class="player-name">' + escapeHtml(displayName(p.name)) + '</td>';
+        const note = p.grossTieNote ? ' <span class="tie-note">(' + p.grossTieNote + ')</span>' : '';
+        html += '<td class="player-name">' + escapeHtml(displayName(p.name)) + note + '</td>';
         html += '<td class="rnds-col">' + p.rounds + '</td>';
 
         let outSum = 0, inSum = 0;
@@ -825,11 +844,31 @@ function renderEclecticNettTable(data) {
         pos++;
     }
 
+    // Annotate countback level for tied players (using NET back-9/6/3/hole).
+    // Compare each player to its neighbour in the same tied group (preferring
+    // the player above, falling back to the player below for the top of a
+    // cluster). The deepest metric that differs is the annotation. Truly
+    // identical players get no note.
+    for (let i = 0; i < players.length; i++) {
+        const p = players[i];
+        p.nettTieNote = '';
+        if (p.net === null) continue;
+        let nb = null;
+        if (i > 0 && players[i-1].net === p.net) nb = players[i-1];
+        else if (i + 1 < players.length && players[i+1].net === p.net) nb = players[i+1];
+        if (!nb) continue;
+        if (p.back9Net !== nb.back9Net)      p.nettTieNote = 'last 9';
+        else if (p.back6Net !== nb.back6Net) p.nettTieNote = 'last 6';
+        else if (p.back3Net !== nb.back3Net) p.nettTieNote = 'last 3';
+        else if (p.lastHoleNet !== nb.lastHoleNet) p.nettTieNote = 'last hole';
+    }
+
     for (const p of players) {
         const rankClass = p.nettPos <= 3 ? ' class="rank-' + p.nettPos + '"' : '';
         html += '<tr' + rankClass + '>';
         html += '<td>' + p.nettPos + '</td>';
-        html += '<td class="player-name">' + escapeHtml(displayName(p.name)) + '</td>';
+        const note = p.nettTieNote ? ' <span class="tie-note">(' + p.nettTieNote + ')</span>' : '';
+        html += '<td class="player-name">' + escapeHtml(displayName(p.name)) + note + '</td>';
         html += '<td class="rnds-col">' + p.rounds + '</td>';
 
         let outSum = 0, inSum = 0;

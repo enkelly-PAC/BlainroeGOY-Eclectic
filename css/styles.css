@@ -493,3 +493,10 @@ footer {
     font-weight: 600;
     font-size: 0.78rem;
 }
+.eclectic-table .tie-note {
+    font-weight: 400;
+    color: #777;
+    font-size: 0.82em;
+    margin-left: 0.3em;
+    font-style: italic;
+}

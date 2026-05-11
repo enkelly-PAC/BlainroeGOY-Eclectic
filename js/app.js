@@ -1029,6 +1029,21 @@ function renderEclecticInsights(data) {
     }
     html += '</div></div>';
 
+    // Gross Field Snapshot (mirrors Nett Field Snapshot)
+    if (completePlayers.length > 0) {
+        html += '<div class="insight-card insight-wide">';
+        html += '<h4>🎯 Gross Field Snapshot</h4>';
+        html += '<div class="insight-stats">';
+        html += '<div class="stat-item"><span class="stat-num">' + completePlayers.length + '</span><span class="stat-label">Full Cards</span></div>';
+        html += '<div class="stat-item"><span class="stat-num">' + completePlayers[0].gross + '</span><span class="stat-label">Best Gross</span></div>';
+        html += '<div class="stat-item"><span class="stat-num">' + escapeHtml(displayName(completePlayers[0].name)) + '</span><span class="stat-label">Gross Leader</span></div>';
+        const avgGross = (completePlayers.reduce((a, p) => a + p.gross, 0) / completePlayers.length).toFixed(1);
+        html += '<div class="stat-item"><span class="stat-num">' + avgGross + '</span><span class="stat-label">Avg Gross</span></div>';
+        const avgGrossHcap = (completePlayers.reduce((a, p) => a + (p.handicap || 0), 0) / completePlayers.length).toFixed(1);
+        html += '<div class="stat-item"><span class="stat-num">' + avgGrossHcap + '</span><span class="stat-label">Avg Handicap</span></div>';
+        html += '</div></div>';
+    }
+
     // Hardest holes
     html += '<div class="insight-card">';
     html += '<h4>💀 Hardest Holes</h4>';
@@ -1260,29 +1275,33 @@ function renderNettEclecticInsights(data) {
     // Closest nett to scratch
     const closestToScratch = byNett.slice(0, 5);
 
-    // Per-player nett shot tallies on the eclectic card (eagle/birdie/par)
+    // Per-player nett shot tallies on the eclectic card (albatross/eagle/birdie/par)
     const playerNettTallies = nettPlayers.map(p => {
-        let ne = 0, nb = 0, np = 0, filled = 0;
+        let na = 0, ne = 0, nb = 0, np = 0, filled = 0;
         for (let h = 0; h < 18; h++) {
             const s = p.scores[h];
             if (s === null || s === undefined) continue;
             const strokes = getStrokesOnHole(p.handicap, h);
             const diff = (s - strokes) - COURSE.par[h];
             filled++;
-            if (diff <= -2) ne++;
+            if (diff <= -3) na++;
+            else if (diff === -2) ne++;
             else if (diff === -1) nb++;
             else if (diff === 0) np++;
         }
         return {
             name: p.name, handicap: p.handicap, net: p.net, gross: p.gross,
-            nettEagles: ne, nettBirdies: nb, nettPars: np, filledHoles: filled
+            nettAlbatrosses: na, nettEagles: ne, nettBirdies: nb, nettPars: np, filledHoles: filled
         };
     });
+    const totalNettAlbatrosses = playerNettTallies.reduce((a, p) => a + p.nettAlbatrosses, 0);
     const totalNettEagles = playerNettTallies.reduce((a, p) => a + p.nettEagles, 0);
     const totalNettBirdies = playerNettTallies.reduce((a, p) => a + p.nettBirdies, 0);
     const totalNettPars = playerNettTallies.reduce((a, p) => a + p.nettPars, 0);
     const mostNettBirdies = [...playerNettTallies]
-        .sort((a, b) => b.nettBirdies - a.nettBirdies || b.nettEagles - a.nettEagles)
+        .sort((a, b) => b.nettBirdies - a.nettBirdies
+            || b.nettAlbatrosses - a.nettAlbatrosses
+            || b.nettEagles - a.nettEagles)
         .slice(0, 5);
     const mostNettPars = [...playerNettTallies]
         .sort((a, b) => b.nettPars - a.nettPars
@@ -1291,6 +1310,9 @@ function renderNettEclecticInsights(data) {
     const nettEaglePlayers = playerNettTallies
         .filter(p => p.nettEagles > 0)
         .sort((a, b) => b.nettEagles - a.nettEagles);
+    const nettAlbatrossPlayers = playerNettTallies
+        .filter(p => p.nettAlbatrosses > 0)
+        .sort((a, b) => b.nettAlbatrosses - a.nettAlbatrosses);
 
     // ---- BUILD HTML ----
     let html = '<div class="insights-grid">';
@@ -1302,6 +1324,9 @@ function renderNettEclecticInsights(data) {
     html += '<div class="stat-item"><span class="stat-num">' + players.length + '</span><span class="stat-label">Players</span></div>';
     html += '<div class="stat-item"><span class="stat-num">' + nettPlayers.length + '</span><span class="stat-label">Full Cards</span></div>';
     html += '<div class="stat-item"><span class="stat-num">' + totalNettEagles + '</span><span class="stat-label">🟡 Nett Eagles</span></div>';
+    if (totalNettAlbatrosses > 0) {
+        html += '<div class="stat-item"><span class="stat-num">' + totalNettAlbatrosses + '</span><span class="stat-label">🦅 Nett Albatross</span></div>';
+    }
     html += '<div class="stat-item"><span class="stat-num">' + totalNettBirdies + '</span><span class="stat-label">🔴 Nett Birdies</span></div>';
     html += '<div class="stat-item"><span class="stat-num">' + totalNettPars + '</span><span class="stat-label">🟢 Nett Pars</span></div>';
     if (byNett.length > 0) {
@@ -1367,6 +1392,19 @@ function renderNettEclecticInsights(data) {
         for (const p of nettEaglePlayers) {
             html += '<tr><td>' + escapeHtml(displayName(p.name)) + '</td>';
             html += '<td><strong>🟡 ' + p.nettEagles + '</strong></td></tr>';
+        }
+        html += '</tbody></table></div>';
+    }
+
+    // Nett Albatross Club (rarer than eagle - diff <= -3)
+    if (nettAlbatrossPlayers.length > 0) {
+        html += '<div class="insight-card">';
+        html += '<h4>🦅✨ Nett Albatross Club</h4>';
+        html += '<p class="insight-subtitle">Three under net on a single hole — the rarest shot of the season</p>';
+        html += '<table class="insight-table"><thead><tr><th>Player</th><th>Albatross</th></tr></thead><tbody>';
+        for (const p of nettAlbatrossPlayers) {
+            html += '<tr><td>' + escapeHtml(displayName(p.name)) + '</td>';
+            html += '<td><strong>🦅 ' + p.nettAlbatrosses + '</strong></td></tr>';
         }
         html += '</tbody></table></div>';
     }

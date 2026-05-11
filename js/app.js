@@ -593,6 +593,15 @@ function getScoreCellStyle(diff) {
     return '';
 }
 
+// Coloring for Out / In / overall totals: red under par, green level par,
+// bogey-blue over par. Uses the same red/green/blue palette as per-hole
+// cells so the eye reads the totals in the same visual language.
+function getTotalCellStyle(diff) {
+    if (diff < 0) return 'background:#FF0000;color:#fff';
+    if (diff === 0) return 'background:#92D050';
+    return 'background:#BDD7EE';
+}
+
 // ============ TABLE RENDERING ============
 
 function renderGOYTable(results) {
@@ -778,11 +787,20 @@ function renderEclecticGrossTable(data) {
                 const style = getScoreCellStyle(diff);
                 html += '<td' + (style ? ' style="' + style + '"' : '') + '>' + s + '</td>';
             }
-            if (h === 8) html += '<td class="total-cell">' + outSum + '</td>';
+            if (h === 8) {
+                const outStyle = getTotalCellStyle(outSum - COURSE.outPar);
+                html += '<td class="total-cell" style="' + outStyle + '">' + outSum + '</td>';
+            }
         }
-        html += '<td class="total-cell">' + inSum + '</td>';
+        const inStyle = getTotalCellStyle(inSum - COURSE.inPar);
+        html += '<td class="total-cell" style="' + inStyle + '">' + inSum + '</td>';
 
-        html += '<td class="total-cell">' + (p.gross !== null ? p.gross : 'NR') + '</td>';
+        if (p.gross !== null) {
+            const grossStyle = getTotalCellStyle(p.gross - COURSE.totalPar);
+            html += '<td class="total-cell" style="' + grossStyle + '">' + p.gross + '</td>';
+        } else {
+            html += '<td class="total-cell">NR</td>';
+        }
         html += '</tr>';
     }
 
@@ -883,13 +901,22 @@ function renderEclecticNettTable(data) {
                 const style = getScoreCellStyle(diff);
                 html += '<td' + (style ? ' style="' + style + '"' : '') + '>' + s + '</td>';
             }
-            if (h === 8) html += '<td class="total-cell">' + outSum + '</td>';
+            if (h === 8) {
+                const outStyle = getTotalCellStyle(outSum - COURSE.outPar);
+                html += '<td class="total-cell" style="' + outStyle + '">' + outSum + '</td>';
+            }
         }
-        html += '<td class="total-cell">' + inSum + '</td>';
+        const inStyle = getTotalCellStyle(inSum - COURSE.inPar);
+        html += '<td class="total-cell" style="' + inStyle + '">' + inSum + '</td>';
 
         html += '<td class="total-cell">' + (p.gross !== null ? p.gross : 'NR') + '</td>';
         html += '<td>' + (p.handicapDisplay || '-') + '</td>';
-        html += '<td class="total-cell">' + (p.net !== null ? p.net : 'NR') + '</td>';
+        if (p.net !== null) {
+            const netStyle = getTotalCellStyle(p.net - COURSE.totalPar);
+            html += '<td class="total-cell" style="' + netStyle + '">' + p.net + '</td>';
+        } else {
+            html += '<td class="total-cell">NR</td>';
+        }
         html += '</tr>';
     }
 

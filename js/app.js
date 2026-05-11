@@ -25,8 +25,13 @@ for (let i = 0; i < 20; i++) {
 const appState = {
     competitions: [],
     goyResults: null,
-    eclecticData: null
+    eclecticData: null,
+    pals: []
 };
+
+// ============ HEAD-TO-HEAD ============
+const PALS_STORAGE_KEY = 'blainroe_pals';
+const MAX_PALS = 8;
 
 // ============ CSV PARSING ============
 
@@ -1714,6 +1719,9 @@ function generateTables() {
     document.getElementById('eclectic-insights-container').innerHTML = renderEclecticInsights(eclecticSource);
     document.getElementById('eclectic-nett-insights-container').innerHTML = renderNettEclecticInsights(eclecticSource);
 
+    renderPalsPicker();
+    renderHeadToHead();
+
     const section = document.getElementById('results-section');
     section.style.display = 'block';
     section.scrollIntoView({ behavior: 'smooth' });
@@ -1725,6 +1733,736 @@ function switchTab(tabId) {
     document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
     document.querySelector('[onclick="switchTab(\'' + tabId + '\')"]').classList.add('active');
     document.getElementById('tab-' + tabId).classList.add('active');
+    if (tabId === 'head-to-head') {
+        // Focus the search input for fast typing
+        const input = document.getElementById('h2h-search-input');
+        if (input) setTimeout(() => input.focus(), 50);
+    }
+}
+
+// ============ HEAD-TO-HEAD ENGINE ============
+
+function loadPalsFromStorage() {
+    try {
+        const raw = localStorage.getItem(PALS_STORAGE_KEY);
+        if (!raw) return;
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+            appState.pals = parsed.filter(n => typeof n === 'string').slice(0, MAX_PALS);
+        }
+    } catch (e) { /* ignore */ }
+}
+
+function savePalsToStorage() {
+    try {
+        localStorage.setItem(PALS_STORAGE_KEY, JSON.stringify(appState.pals));
+    } catch (e) { /* ignore */ }
+}
+
+function getAllPlayerNames() {
+    const names = new Set();
+    // From GOY results
+    for (const comp of appState.competitions) {
+        if (comp.results) {
+            for (const r of comp.results) {
+                if (r.playerName) names.add(r.playerName.trim());
+            }
+        }
+        if (comp.scorecards) {
+            for (const n of Object.keys(comp.scorecards)) names.add(n.trim());
+        }
+        if (comp.handicaps) {
+            for (const n of Object.keys(comp.handicaps)) names.add(n.trim());
+        }
+    }
+    // From eclectic data (if uploaded as a dedicated CSV)
+    if (appState.eclecticData && appState.eclecticData.players) {
+        for (const p of appState.eclecticData.players) names.add(p.name.trim());
+    }
+    return Array.from(names).sort((a, b) => a.localeCompare(b));
+}
+
+function normalisePalName(name) { return (name || '').trim().toLowerCase(); }
+
+function addPal(name) {
+    const clean = (name || '').trim();
+    if (!clean) return;
+    const norm = normalisePalName(clean);
+    if (appState.pals.some(n => normalisePalName(n) === norm)) return; // already added
+    if (appState.pals.length >= MAX_PALS) {
+        alert('You can compare up to ' + MAX_PALS + ' players. Remove one first.');
+        return;
+    }
+    appState.pals.push(clean);
+    savePalsToStorage();
+    renderPalsPicker();
+    renderHeadToHead();
+}
+
+function removePal(name) {
+    const norm = normalisePalName(name);
+    appState.pals = appState.pals.filter(n => normalisePalName(n) !== norm);
+    savePalsToStorage();
+    renderPalsPicker();
+    renderHeadToHead();
+}
+
+function clearAllPals() {
+    if (appState.pals.length === 0) return;
+    if (!confirm('Clear all selected players?')) return;
+    appState.pals = [];
+    savePalsToStorage();
+    renderPalsPicker();
+    renderHeadToHead();
+}
+
+function renderPalsPicker() {
+    const chipsEl = document.getElementById('h2h-chips');
+    const countEl = document.getElementById('h2h-count');
+    if (!chipsEl) return;
+    if (appState.pals.length === 0) {
+        chipsEl.innerHTML = '<span class="h2h-chips-empty">No players selected yet — start typing above.</span>';
+    } else {
+        chipsEl.innerHTML = appState.pals.map(name =>
+            '<span class="h2h-chip">' + escapeHtml(displayName(name)) +
+            '<button class="h2h-chip-remove" title="Remove" onclick="removePal(' + JSON.stringify(name).replace(/"/g, '&quot;') + ')">✕</button></span>'
+        ).join('');
+    }
+    if (countEl) {
+        countEl.textContent = appState.pals.length + ' / ' + MAX_PALS + ' selected';
+    }
+}
+
+function initPalsSearch() {
+    const input = document.getElementById('h2h-search-input');
+    const dropdown = document.getElementById('h2h-search-dropdown');
+    if (!input || !dropdown) return;
+    let activeIndex = -1;
+
+    function closeDropdown() {
+        dropdown.hidden = true;
+        dropdown.innerHTML = '';
+        activeIndex = -1;
+    }
+
+    function renderResults(matches) {
+        if (matches.length === 0) {
+            dropdown.innerHTML = '<div class="h2h-dropdown-empty">No matching players.</div>';
+        } else {
+            dropdown.innerHTML = matches.map((name, i) => {
+                const isAdded = appState.pals.some(p => normalisePalName(p) === normalisePalName(name));
+                const cls = 'h2h-dropdown-item' + (isAdded ? ' disabled' : '') + (i === activeIndex ? ' active' : '');
+                const label = escapeHtml(displayName(name)) + (isAdded ? ' <span style="font-size:0.8em">(already added)</span>' : '');
+                return '<div class="' + cls + '" data-name="' + escapeHtml(name) + '" data-index="' + i + '">' + label + '</div>';
+            }).join('');
+            dropdown.querySelectorAll('.h2h-dropdown-item').forEach(el => {
+                el.addEventListener('mousedown', (ev) => {
+                    ev.preventDefault();
+                    if (el.classList.contains('disabled')) return;
+                    addPal(el.dataset.name);
+                    input.value = '';
+                    closeDropdown();
+                });
+            });
+        }
+        dropdown.hidden = false;
+    }
+
+    function search(q) {
+        const all = getAllPlayerNames();
+        const needle = q.trim().toLowerCase();
+        if (!needle) {
+            renderResults(all.slice(0, 20));
+            return;
+        }
+        const matches = all.filter(n => n.toLowerCase().includes(needle)).slice(0, 30);
+        renderResults(matches);
+    }
+
+    input.addEventListener('focus', () => search(input.value));
+    input.addEventListener('input', () => { activeIndex = -1; search(input.value); });
+    input.addEventListener('blur', () => setTimeout(closeDropdown, 150));
+    input.addEventListener('keydown', (e) => {
+        const items = Array.from(dropdown.querySelectorAll('.h2h-dropdown-item:not(.disabled)'));
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            activeIndex = Math.min(activeIndex + 1, items.length - 1);
+            items.forEach(el => el.classList.remove('active'));
+            if (items[activeIndex]) {
+                items[activeIndex].classList.add('active');
+                items[activeIndex].scrollIntoView({ block: 'nearest' });
+            }
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            activeIndex = Math.max(activeIndex - 1, 0);
+            items.forEach(el => el.classList.remove('active'));
+            if (items[activeIndex]) {
+                items[activeIndex].classList.add('active');
+                items[activeIndex].scrollIntoView({ block: 'nearest' });
+            }
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            if (items[activeIndex]) {
+                addPal(items[activeIndex].dataset.name);
+            } else if (items.length === 1) {
+                addPal(items[0].dataset.name);
+            }
+            input.value = '';
+            closeDropdown();
+        } else if (e.key === 'Escape') {
+            closeDropdown();
+        }
+    });
+}
+
+function buildEclecticRankMaps(data) {
+    if (!data || !data.players || data.players.length === 0) return null;
+    const grossSorted = [...data.players].sort((a, b) =>
+        (a.gross ?? Infinity) - (b.gross ?? Infinity) ||
+        a.back9Gross - b.back9Gross ||
+        a.back6Gross - b.back6Gross ||
+        a.back3Gross - b.back3Gross ||
+        a.lastHoleGross - b.lastHoleGross
+    );
+    const nettSorted = [...data.players].sort((a, b) =>
+        (a.net ?? Infinity) - (b.net ?? Infinity) ||
+        a.back9Net - b.back9Net ||
+        a.back6Net - b.back6Net ||
+        a.back3Net - b.back3Net ||
+        a.lastHoleNet - b.lastHoleNet
+    );
+    const grossRank = new Map();
+    grossSorted.forEach((p, i) => grossRank.set(normalisePalName(p.name), i + 1));
+    const nettRank = new Map();
+    nettSorted.forEach((p, i) => nettRank.set(normalisePalName(p.name), i + 1));
+    return { grossRank, nettRank, total: data.players.length };
+}
+
+function renderHeadToHead() {
+    const container = document.getElementById('head-to-head-table-container');
+    if (!container) return;
+
+    if (appState.pals.length === 0) {
+        container.innerHTML =
+            '<div class="h2h-empty-state">' +
+            '<span class="emoji">👥</span>' +
+            '<p>Add players above to start a head-to-head comparison.</p>' +
+            '<p style="margin-top:0.4rem;font-size:0.9rem;">Tip: type a surname to find them quickly.</p>' +
+            '</div>';
+        return;
+    }
+
+    const goy = appState.goyResults || calculateGOY();
+    const ecl = appState.eclecticData || calculateEclecticFromScorecards();
+    const eclRanks = buildEclecticRankMaps(ecl);
+
+    // Build a row per pal
+    const rows = appState.pals.map(name => {
+        const norm = normalisePalName(name);
+        const goyRow = goy ? goy.leaderboard.find(p => normalisePalName(p.playerName) === norm) : null;
+        const eclPlayer = (ecl && ecl.players) ? ecl.players.find(p => normalisePalName(p.name) === norm) : null;
+        // Latest handicap fallback (from competitions)
+        let hc = eclPlayer ? eclPlayer.handicap : null;
+        if (hc === null || hc === undefined) {
+            // Look in handicaps map
+            for (const comp of appState.competitions) {
+                if (comp.handicaps) {
+                    for (const [n, h] of Object.entries(comp.handicaps)) {
+                        if (normalisePalName(n) === norm && h !== undefined && h !== null) hc = h;
+                    }
+                }
+            }
+        }
+        // Rounds played: count comps where this player has a scorecard
+        let rounds = 0;
+        for (const comp of appState.competitions) {
+            if (comp.scorecards && Object.keys(comp.scorecards).some(n => normalisePalName(n) === norm)) {
+                rounds++;
+            }
+        }
+        return {
+            name,
+            handicap: hc,
+            goyPts: goyRow ? goyRow.total : 0,
+            goyCompCount: goyRow ? goyRow.compCount : 0,
+            goyPosition: goyRow ? goyRow.position : null,
+            eclGross: eclPlayer ? eclPlayer.gross : null,
+            eclNet: eclPlayer ? eclPlayer.net : null,
+            grossRank: (eclPlayer && eclRanks) ? eclRanks.grossRank.get(norm) : null,
+            nettRank: (eclPlayer && eclRanks) ? eclRanks.nettRank.get(norm) : null,
+            scores: eclPlayer ? eclPlayer.scores : null,
+            rounds,
+            back9Gross: eclPlayer ? eclPlayer.back9Gross : null,
+            back9Net: eclPlayer ? eclPlayer.back9Net : null
+        };
+    });
+
+    // Find leaders per metric for highlighting / takeaways
+    function bestOf(arr, getter, lowerBetter = false) {
+        let best = null;
+        for (const r of arr) {
+            const v = getter(r);
+            if (v === null || v === undefined) continue;
+            if (best === null || (lowerBetter ? v < getter(best) : v > getter(best))) best = r;
+        }
+        return best;
+    }
+    const goyLeader   = bestOf(rows, r => r.goyPts, false);
+    // Use precomputed ranks (countback-aware: back-9 → back-6 → back-3 → 18th) so ties resolve correctly.
+    const grossLeader = bestOf(rows.filter(r => r.eclGross !== null && r.eclGross !== undefined), r => r.grossRank, true);
+    const nettLeader  = bestOf(rows.filter(r => r.eclNet   !== null && r.eclNet   !== undefined), r => r.nettRank,  true);
+    const mostActive  = bestOf(rows, r => r.rounds, false);
+
+    let html = '';
+
+    // ----- Sort helpers (best at top) -----
+    function _sortGoy(a, b) {
+        const ap = a.goyPts || 0, bp = b.goyPts || 0;
+        if (bp !== ap) return bp - ap; // higher GOY pts first
+        const aPos = (a.goyPosition === null || a.goyPosition === undefined) ? Infinity : a.goyPosition;
+        const bPos = (b.goyPosition === null || b.goyPosition === undefined) ? Infinity : b.goyPosition;
+        return aPos - bPos;
+    }
+    function _sortGross(a, b) {
+        const aR = a.grossRank || Infinity, bR = b.grossRank || Infinity;
+        return aR - bR; // lower club rank = better, nulls last
+    }
+    function _sortNett(a, b) {
+        const aR = a.nettRank || Infinity, bR = b.nettRank || Infinity;
+        return aR - bR;
+    }
+    const goyOrder   = [...rows].sort(_sortGoy);
+    const grossOrder = [...rows].sort(_sortGross);
+    const nettOrder  = [...rows].sort(_sortNett);
+
+    // ----- GOY -----
+    html += '<div class="h2h-section">';
+    html += '<h4>🏆 Golfer of the Year — Points</h4>';
+    html += '<table class="h2h-table"><thead><tr>' +
+        '<th>Player</th><th class="num">HC</th><th class="num">GOY Pts</th>' +
+        '<th class="num">Top-20 Finishes</th><th class="num">Overall Rank</th></tr></thead><tbody>';
+    for (const r of goyOrder) {
+        const leader = goyLeader && r === goyLeader && r.goyPts > 0;
+        html += '<tr' + (leader ? ' class="h2h-leader"' : '') + '>' +
+            '<td>' + escapeHtml(displayName(r.name)) + '</td>' +
+            '<td class="num">' + (r.handicap !== null && r.handicap !== undefined ? r.handicap : '—') + '</td>' +
+            '<td class="num">' + (r.goyPts || 0) + '</td>' +
+            '<td class="num">' + (r.goyCompCount || 0) + '</td>' +
+            '<td class="num">' + (r.goyPosition ? r.goyPosition : '—') + '</td>' +
+            '</tr>';
+    }
+    html += '</tbody></table></div>';
+
+    // ----- Eclectic Gross -----
+    html += '<div class="h2h-section">';
+    html += '<h4>⛳ Eclectic Cup — Gross</h4>';
+    html += '<table class="h2h-table"><thead><tr>' +
+        '<th>Player</th><th class="num">HC</th><th class="num">Eclectic Gross</th>' +
+        '<th class="num">Club Rank' + (eclRanks ? ' (of ' + eclRanks.total + ')' : '') + '</th>' +
+        '<th class="num">Rounds</th></tr></thead><tbody>';
+    for (const r of grossOrder) {
+        const leader = grossLeader && r === grossLeader && r.eclGross !== null;
+        html += '<tr' + (leader ? ' class="h2h-leader"' : '') + '>' +
+            '<td>' + escapeHtml(displayName(r.name)) + '</td>' +
+            '<td class="num">' + (r.handicap !== null && r.handicap !== undefined ? r.handicap : '—') + '</td>' +
+            '<td class="num">' + (r.eclGross !== null ? r.eclGross : '—') + '</td>' +
+            '<td class="num">' + (r.grossRank ? r.grossRank : '—') + '</td>' +
+            '<td class="num">' + r.rounds + '</td>' +
+            '</tr>';
+    }
+    html += '</tbody></table>';
+    html += '<p class="help-text" style="margin-top:0.5rem;">Players need a valid score on every hole across the season to qualify for the eclectic. Ties resolved by back-9 → back-6 → back-3 → 18th countback (same as club rules).</p>';
+    html += '</div>';
+
+    // ----- Eclectic Nett -----
+    html += '<div class="h2h-section">';
+    html += '<h4>🎯 Eclectic Cup — Nett</h4>';
+    html += '<table class="h2h-table"><thead><tr>' +
+        '<th>Player</th><th class="num">HC</th><th class="num">Eclectic Nett</th>' +
+        '<th class="num">Club Rank' + (eclRanks ? ' (of ' + eclRanks.total + ')' : '') + '</th>' +
+        '<th class="num">Rounds</th></tr></thead><tbody>';
+    for (const r of nettOrder) {
+        const leader = nettLeader && r === nettLeader && r.eclNet !== null;
+        html += '<tr' + (leader ? ' class="h2h-leader"' : '') + '>' +
+            '<td>' + escapeHtml(displayName(r.name)) + '</td>' +
+            '<td class="num">' + (r.handicap !== null && r.handicap !== undefined ? r.handicap : '—') + '</td>' +
+            '<td class="num">' + (r.eclNet !== null ? r.eclNet : '—') + '</td>' +
+            '<td class="num">' + (r.nettRank ? r.nettRank : '—') + '</td>' +
+            '<td class="num">' + r.rounds + '</td>' +
+            '</tr>';
+    }
+    html += '</tbody></table></div>';
+
+    // ----- Hole-by-hole (only if at least one pal has eclectic data) -----
+    const withScores = grossOrder.filter(r => r.scores);
+    if (withScores.length > 0) {
+        html += '<div class="h2h-section">';
+        html += '<h4>📊 Eclectic Gross — hole by hole</h4>';
+        html += '<div class="table-wrapper"><table class="h2h-table">';
+        html += '<thead><tr><th>Player</th>';
+        for (let i = 1; i <= 18; i++) html += '<th class="hole">' + i + '</th>';
+        html += '<th class="num">Total</th></tr></thead><tbody>';
+        // Par row
+        html += '<tr><td><strong>Par</strong></td>';
+        for (let i = 0; i < 18; i++) html += '<td class="hole">' + COURSE.par[i] + '</td>';
+        html += '<td class="num"><strong>' + COURSE.totalPar + '</strong></td></tr>';
+        for (const r of withScores) {
+            html += '<tr><td>' + escapeHtml(displayName(r.name)) + '</td>';
+            for (let i = 0; i < 18; i++) {
+                const s = r.scores[i];
+                const diff = s - COURSE.par[i];
+                const style = getScoreCellStyle(diff);
+                html += '<td class="hole" style="' + style + '">' + s + '</td>';
+            }
+            html += '<td class="num"><strong>' + r.eclGross + '</strong></td></tr>';
+        }
+        html += '</tbody></table></div></div>';
+    }
+
+    // ----- Banter takeaways -----
+    html += buildBanterTakeaways(rows, ecl);
+
+    container.innerHTML = html;
+}
+
+// ============ BANTER ENGINE ============
+//
+// Rule-based, fully local. No LLM, no network calls, no data leaves the browser.
+// Each insight has multiple phrasings; a stable seed (group + date) selects which
+// phrasing fires, so the banter feels fresh day-to-day but is consistent within a day.
+//
+function _h2hSeed(rows) {
+    const names = rows.map(r => normalisePalName(r.name)).sort().join('|');
+    const day = new Date().toISOString().slice(0, 10);
+    const str = names + '|' + day;
+    let h = 0;
+    for (let i = 0; i < str.length; i++) h = ((h << 5) - h + str.charCodeAt(i)) | 0;
+    return Math.abs(h);
+}
+function _pick(arr, seed, salt) { return arr[(seed + (salt || 0)) % arr.length]; }
+function _strong(name) { return '<strong>' + escapeHtml(displayName(name)) + '</strong>'; }
+function _plural(n, w) { return n + ' ' + w + (n === 1 ? '' : 's'); }
+
+function _holePerformance(scores) {
+    // Returns { par3, par4, par5, front9, back9, birdies, eagles, pars, bogeys, doublesPlus, holesAtOrUnderPar }
+    if (!scores) return null;
+    let par3 = 0, par4 = 0, par5 = 0, front9 = 0, back9 = 0;
+    let birdies = 0, eagles = 0, pars = 0, bogeys = 0, doublesPlus = 0, holesAtOrUnderPar = 0;
+    let par3Par = 0, par5Par = 0, par4Par = 0;
+    for (let i = 0; i < 18; i++) {
+        const s = scores[i], p = COURSE.par[i];
+        if (s === null || s === undefined) continue;
+        if (p === 3) { par3 += s; par3Par += p; }
+        if (p === 4) { par4 += s; par4Par += p; }
+        if (p === 5) { par5 += s; par5Par += p; }
+        if (i < 9) front9 += s; else back9 += s;
+        const d = s - p;
+        if (d <= -2) eagles++;
+        if (d === -1) birdies++;
+        if (d === 0) pars++;
+        if (d === 1) bogeys++;
+        if (d >= 2) doublesPlus++;
+        if (d <= 0) holesAtOrUnderPar++;
+    }
+    return { par3, par4, par5, front9, back9, birdies, eagles, pars, bogeys, doublesPlus, holesAtOrUnderPar, par3Par, par4Par, par5Par };
+}
+
+function buildBanterTakeaways(rows, ecl) {
+    if (!rows || rows.length === 0) return '';
+    const seed = _h2hSeed(rows);
+    const takeaways = [];
+
+    // Per-row precomputed stats
+    for (const r of rows) r._perf = _holePerformance(r.scores);
+
+    // ===== Helpers =====
+    const withGross = rows.filter(r => r.eclGross !== null && r.eclGross !== undefined);
+    const withNet   = rows.filter(r => r.eclNet   !== null && r.eclNet   !== undefined);
+    const withScores = rows.filter(r => r.scores);
+    const goyLeader = rows.reduce((b, r) => (!b || r.goyPts > b.goyPts ? r : b), null);
+    // Use precomputed ranks (countback-aware) so the leader on a tied score is the one who wins on club countback.
+    const grossLeader = withGross.length ? withGross.reduce((b, r) => (!b || (r.grossRank ?? Infinity) < (b.grossRank ?? Infinity) ? r : b), null) : null;
+    const nettLeader  = withNet.length   ? withNet.reduce((b, r) => (!b || (r.nettRank  ?? Infinity) < (b.nettRank  ?? Infinity) ? r : b), null) : null;
+
+    // ----- 1. GOY -----
+    if (goyLeader && goyLeader.goyPts > 0) {
+        const tiedTop = rows.filter(r => r.goyPts === goyLeader.goyPts);
+        if (tiedTop.length > 1) {
+            const names = tiedTop.map(r => _strong(r.name)).join(' & ');
+            takeaways.push(_pick([
+                names + ' are level on GOY points (' + goyLeader.goyPts + ' apiece).',
+                'Dead heat at the top of the GOY column: ' + names + ' on ' + goyLeader.goyPts + '.',
+                names + ' share the GOY lead with ' + goyLeader.goyPts + ' pts.'
+            ], seed, 1));
+        } else {
+            const variants = [
+                _strong(goyLeader.name) + ' leads on GOY points (' + _plural(goyLeader.goyPts, 'pt') + ' from ' + _plural(goyLeader.goyCompCount, 'event') + ').',
+                _plural(goyLeader.goyPts, 'GOY point') + ' and counting — ' + _strong(goyLeader.name) + ' is out in front.',
+                _strong(goyLeader.name) + ' is top of the GOY pile in this group (' + goyLeader.goyPts + ' pts).',
+                'Bragging rights belong to ' + _strong(goyLeader.name) + ' for now — ' + _plural(goyLeader.goyPts, 'GOY point') + '.',
+                _strong(goyLeader.name) + ' has been the headline-getter: ' + _plural(goyLeader.goyPts, 'GOY point') + ' from ' + _plural(goyLeader.goyCompCount, 'event') + '.'
+            ];
+            takeaways.push(_pick(variants, seed, 1));
+        }
+    } else if (rows.length > 1) {
+        takeaways.push(_pick([
+            'GOY column is empty for everyone here — somebody owes the group a top-20 finish.',
+            'Nobody in this group has cracked the GOY board yet. Time to break the duck.',
+            'No GOY points scored in this group. The next top 20 will draw first blood.'
+        ], seed, 2));
+    }
+
+    // ----- 2. Gross eclectic -----
+    if (grossLeader) {
+        const others = withGross.filter(r => r !== grossLeader);
+        const margin = others.length ? Math.min(...others.map(r => r.eclGross - grossLeader.eclGross)) : 0;
+        const tied = withGross.filter(r => r.eclGross === grossLeader.eclGross);
+        if (tied.length > 1) {
+            const names = tied.map(r => _strong(r.name)).join(' & ');
+            takeaways.push(_pick([
+                'Tied on gross eclectic: ' + names + ' on ' + grossLeader.eclGross + ' — countback drama.',
+                names + ' locked together on gross at ' + grossLeader.eclGross + '.',
+                'Gross eclectic dead heat: ' + names + ' both on ' + grossLeader.eclGross + '.'
+            ], seed, 3));
+        } else if (margin > 0) {
+            takeaways.push(_pick([
+                'Eclectic <strong>gross</strong> leader: ' + _strong(grossLeader.name) + ' (' + grossLeader.eclGross + '), ' + _plural(margin, 'shot') + ' clear.',
+                _strong(grossLeader.name) + ' holds the gross eclectic at ' + grossLeader.eclGross + ' — ' + _plural(margin, 'shot') + ' over the next-best.',
+                'Gross honours: ' + _strong(grossLeader.name) + ' at ' + grossLeader.eclGross + ', ' + _plural(margin, 'shot') + ' ahead.',
+                'On the gross front: ' + _strong(grossLeader.name) + ' leads at ' + grossLeader.eclGross + '.'
+            ], seed, 3));
+        } else {
+            takeaways.push(_strong(grossLeader.name) + ' is the only one with a full eclectic gross card (' + grossLeader.eclGross + ').');
+        }
+    }
+
+    // ----- 3. Nett eclectic -----
+    if (nettLeader) {
+        const others = withNet.filter(r => r !== nettLeader);
+        const margin = others.length ? Math.min(...others.map(r => r.eclNet - nettLeader.eclNet)) : 0;
+        const tied = withNet.filter(r => r.eclNet === nettLeader.eclNet);
+        if (tied.length > 1) {
+            // Sort by precomputed nettRank — full countback chain (back-9 → back-6 → back-3 → 18th)
+            const ordered = [...tied].sort((a, b) => (a.nettRank ?? Infinity) - (b.nettRank ?? Infinity));
+            const winner = ordered[0];
+            takeaways.push(_pick([
+                'Nett tied at ' + nettLeader.eclNet + ' between ' + tied.map(r => _strong(r.name)).join(' & ') + ' — ' + _strong(winner.name) + ' edges it on back-9 countback.',
+                'Countback theatre on nett: ' + tied.map(r => _strong(r.name)).join(' & ') + ' locked on ' + nettLeader.eclNet + '. ' + _strong(winner.name) + ' wins the back 9.',
+                tied.map(r => _strong(r.name)).join(' & ') + ' are level on nett (' + nettLeader.eclNet + '). Right now ' + _strong(winner.name) + ' has the better back 9.'
+            ], seed, 4));
+        } else if (margin > 0) {
+            takeaways.push(_pick([
+                'Eclectic <strong>nett</strong> leader: ' + _strong(nettLeader.name) + ' (' + nettLeader.eclNet + '), ' + _plural(margin, 'shot') + ' clear.',
+                _strong(nettLeader.name) + ' takes the nett race at ' + nettLeader.eclNet + ' — ' + _plural(margin, 'shot') + ' ahead.',
+                'Nett honours go to ' + _strong(nettLeader.name) + ' at ' + nettLeader.eclNet + '.',
+                'On nett: ' + _strong(nettLeader.name) + ' leads with ' + nettLeader.eclNet + ' (' + _plural(margin, 'shot') + ' clear).'
+            ], seed, 4));
+        }
+    }
+
+    // ----- 4. HC dynamics -----
+    const hcRows = rows.filter(r => r.handicap !== null && r.handicap !== undefined);
+    if (hcRows.length >= 2) {
+        const min = Math.min(...hcRows.map(r => r.handicap));
+        const max = Math.max(...hcRows.map(r => r.handicap));
+        const lowHC = hcRows.find(r => r.handicap === min);
+        const highHC = hcRows.find(r => r.handicap === max);
+        const spread = max - min;
+        if (spread >= 5) {
+            takeaways.push(_pick([
+                'Handicap spread is ' + _plural(spread, 'shot') + ' — the lower handicappers need to keep the gross close to stay in the nett race.',
+                _plural(spread, 'shot') + ' of handicap separate this group. Nett race could swing on any single round.',
+                'Big handicap gap (' + spread + ' shots) — the cut will do plenty of work.'
+            ], seed, 5));
+        }
+        // Lowest HC has the best gross — natural order
+        if (grossLeader && grossLeader === lowHC && rows.length > 1) {
+            takeaways.push(_pick([
+                _strong(lowHC.name) + ' (HC ' + lowHC.handicap + ') leading on gross — the lowest handicapper is doing what they should.',
+                'Natural order on the gross board: lowest HC (' + _strong(lowHC.name) + ', off ' + lowHC.handicap + ') out in front.'
+            ], seed, 6));
+        }
+        // Highest HC has best nett — cut is working
+        if (nettLeader && nettLeader === highHC && rows.length > 1 && highHC.handicap > lowHC.handicap) {
+            takeaways.push(_pick([
+                _strong(highHC.name) + ' (HC ' + highHC.handicap + ') wears the nett crown — handicaps doing their job.',
+                'Highest handicapper ' + _strong(highHC.name) + ' is best on nett. The cut is working.',
+                'The strokes are paying for ' + _strong(highHC.name) + ' — top of the nett pile off ' + highHC.handicap + '.'
+            ], seed, 7));
+        }
+        // Lowest HC NOT on top of nett — punishment
+        if (nettLeader && nettLeader !== lowHC && lowHC.eclNet !== null && nettLeader.eclNet !== null && rows.length > 1 && lowHC !== highHC) {
+            const gap = lowHC.eclNet - nettLeader.eclNet;
+            if (gap >= 4) {
+                takeaways.push(_pick([
+                    _strong(lowHC.name) + ' off ' + lowHC.handicap + ' is ' + _plural(gap, 'shot') + ' off the nett lead — gross isn\'t translating.',
+                    'Low handicapper ' + _strong(lowHC.name) + ' giving away too many strokes — ' + _plural(gap, 'shot') + ' behind ' + _strong(nettLeader.name) + ' on nett.'
+                ], seed, 8));
+            }
+        }
+    }
+
+    // ----- 5. Front 9 / Back 9 specialists -----
+    if (withScores.length >= 2) {
+        const front9Leader = withScores.reduce((b, r) => (!b || r._perf.front9 < b._perf.front9 ? r : b), null);
+        const back9Leader  = withScores.reduce((b, r) => (!b || r._perf.back9  < b._perf.back9  ? r : b), null);
+        if (front9Leader && back9Leader && front9Leader !== back9Leader) {
+            takeaways.push(_pick([
+                _strong(front9Leader.name) + ' owns the front 9 (' + front9Leader._perf.front9 + '); ' + _strong(back9Leader.name) + ' owns the back (' + back9Leader._perf.back9 + ').',
+                'Two halves of the course, two different leaders — ' + _strong(front9Leader.name) + ' out in ' + front9Leader._perf.front9 + ', ' + _strong(back9Leader.name) + ' back in ' + back9Leader._perf.back9 + '.',
+                'Front 9 ' + _strong(front9Leader.name) + ' (' + front9Leader._perf.front9 + '), back 9 ' + _strong(back9Leader.name) + ' (' + back9Leader._perf.back9 + ').'
+            ], seed, 9));
+        } else if (front9Leader && front9Leader === back9Leader) {
+            takeaways.push(_pick([
+                _strong(front9Leader.name) + ' leads both nines (' + front9Leader._perf.front9 + ' / ' + front9Leader._perf.back9 + ') — complete card.',
+                'Clean sweep for ' + _strong(front9Leader.name) + ' on both nines.'
+            ], seed, 9));
+        }
+    }
+
+    // ----- 6. Par-3 specialist -----
+    if (withScores.length >= 2) {
+        const par3Leader = withScores.reduce((b, r) => (!b || r._perf.par3 < b._perf.par3 ? r : b), null);
+        if (par3Leader) {
+            const overPar = par3Leader._perf.par3 - par3Leader._perf.par3Par;
+            const otherP3 = withScores.filter(r => r !== par3Leader);
+            const margin = otherP3.length ? Math.min(...otherP3.map(r => r._perf.par3 - par3Leader._perf.par3)) : 0;
+            if (margin >= 1) {
+                takeaways.push(_pick([
+                    _strong(par3Leader.name) + ' owns the par 3s (' + par3Leader._perf.par3 + ', ' + (overPar >= 0 ? '+' : '') + overPar + ' to par).',
+                    'Par 3s are ' + _strong(par3Leader.name) + '\'s patch (' + par3Leader._perf.par3 + ' total).',
+                    _strong(par3Leader.name) + ' has the short-game edge — ' + par3Leader._perf.par3 + ' across the par 3s.'
+                ], seed, 10));
+            }
+        }
+    }
+
+    // ----- 7. Par-5 specialist -----
+    if (withScores.length >= 2) {
+        const par5Leader = withScores.reduce((b, r) => (!b || r._perf.par5 < b._perf.par5 ? r : b), null);
+        if (par5Leader) {
+            const otherP5 = withScores.filter(r => r !== par5Leader);
+            const margin = otherP5.length ? Math.min(...otherP5.map(r => r._perf.par5 - par5Leader._perf.par5)) : 0;
+            if (margin >= 1) {
+                const overPar = par5Leader._perf.par5 - par5Leader._perf.par5Par;
+                takeaways.push(_pick([
+                    _strong(par5Leader.name) + ' is the par-5 king (' + par5Leader._perf.par5 + ', ' + (overPar >= 0 ? '+' : '') + overPar + ' to par).',
+                    'Big-hitter award goes to ' + _strong(par5Leader.name) + ' — best on the par 5s.',
+                    _strong(par5Leader.name) + ' eats par 5s for breakfast (' + par5Leader._perf.par5 + ' total).'
+                ], seed, 11));
+            }
+        }
+    }
+
+    // ----- 8. Birdie king -----
+    if (withScores.length >= 2) {
+        const birdieKing = withScores.reduce((b, r) => (!b || r._perf.birdies > b._perf.birdies ? r : b), null);
+        if (birdieKing && birdieKing._perf.birdies >= 2) {
+            const others = withScores.filter(r => r !== birdieKing);
+            if (others.every(r => r._perf.birdies < birdieKing._perf.birdies)) {
+                takeaways.push(_pick([
+                    _strong(birdieKing.name) + ' is the birdie machine — ' + _plural(birdieKing._perf.birdies, 'red number') + ' on the eclectic card.',
+                    'Most birdies in the group: ' + _strong(birdieKing.name) + ' with ' + birdieKing._perf.birdies + '.',
+                    _strong(birdieKing.name) + ' tops the birdie count (' + birdieKing._perf.birdies + ').'
+                ], seed, 12));
+            }
+        }
+    }
+
+    // ----- 9. Eagles (rare — always mention) -----
+    for (const r of withScores) {
+        if (r._perf.eagles > 0) {
+            takeaways.push(_pick([
+                _strong(r.name) + ' has ' + _plural(r._perf.eagles, 'eagle') + ' on the eclectic card. 🦅',
+                _plural(r._perf.eagles, 'eagle') + ' for ' + _strong(r.name) + ' — show-off.',
+                'Eagle alert: ' + _strong(r.name) + ' has ' + _plural(r._perf.eagles, 'two-under') + ' on the card.'
+            ], seed, 13 + r.name.charCodeAt(0)));
+        }
+    }
+
+    // ----- 10. Clean card (low doubles-plus) -----
+    if (withScores.length >= 2) {
+        const cleanest = withScores.reduce((b, r) => (!b || r._perf.doublesPlus < b._perf.doublesPlus ? r : b), null);
+        if (cleanest && cleanest._perf.doublesPlus <= 1) {
+            const others = withScores.filter(r => r !== cleanest);
+            if (others.every(r => r._perf.doublesPlus > cleanest._perf.doublesPlus)) {
+                takeaways.push(_pick([
+                    _strong(cleanest.name) + ' has the cleanest card — ' + (cleanest._perf.doublesPlus === 0 ? 'zero' : _plural(cleanest._perf.doublesPlus, 'hole')) + ' worse than bogey.',
+                    'Consistency award: ' + _strong(cleanest.name) + ' — barely a blow-up hole on the eclectic.'
+                ], seed, 14));
+            }
+        }
+    }
+
+    // ----- 11. Most active / least active -----
+    const mostActive = rows.reduce((b, r) => (!b || r.rounds > b.rounds ? r : b), null);
+    const leastActive = rows.reduce((b, r) => (!b || r.rounds < b.rounds ? r : b), null);
+    if (mostActive && leastActive && mostActive !== leastActive && mostActive.rounds > 0 && rows.length > 1) {
+        const others = rows.filter(r => r !== mostActive);
+        if (others.every(r => r.rounds < mostActive.rounds)) {
+            const totalOthers = others.reduce((s, r) => s + r.rounds, 0);
+            if (mostActive.rounds >= totalOthers && rows.length >= 3) {
+                takeaways.push(_pick([
+                    _strong(mostActive.name) + ' has played as many rounds (' + mostActive.rounds + ') as the rest of the group combined.',
+                    'Show-up factor: ' + _strong(mostActive.name) + ' has matched the rest of the group for rounds played.',
+                    _strong(mostActive.name) + ' is the workhorse — ' + mostActive.rounds + ' rounds against ' + totalOthers + ' for the others.'
+                ], seed, 15));
+            } else {
+                takeaways.push(_pick([
+                    _strong(mostActive.name) + ' is the grinder — ' + _plural(mostActive.rounds, 'round') + ' counted.',
+                    'Most rounds in the group: ' + _strong(mostActive.name) + ' (' + mostActive.rounds + ').',
+                    _strong(mostActive.name) + ' is putting in the shifts — ' + _plural(mostActive.rounds, 'round') + ' so far.'
+                ], seed, 15));
+            }
+        }
+        if (leastActive.rounds === 0 && rows.length >= 2) {
+            takeaways.push(_pick([
+                _strong(leastActive.name) + ' hasn\'t logged a round yet. Card or be banter-fuel.',
+                'No rounds counted for ' + _strong(leastActive.name) + ' — the others are out of sight on the eclectic for now.'
+            ], seed, 16));
+        }
+    }
+
+    // ----- 12. Group totals -----
+    if (withGross.length >= 2 && withGross.length === rows.length) {
+        const combined = withGross.reduce((s, r) => s + r.eclGross, 0);
+        const avg = (combined / withGross.length).toFixed(1);
+        const totalPar = COURSE.totalPar * withGross.length;
+        const diff = combined - totalPar;
+        takeaways.push(_pick([
+            'Combined gross eclectic: ' + combined + ' (' + (diff >= 0 ? '+' : '') + diff + ' to par across ' + withGross.length + ' players).',
+            'Group average eclectic gross: ' + avg + '.',
+            'Between them this group has carded an eclectic gross of ' + combined + ' (avg ' + avg + ').'
+        ], seed, 17));
+    }
+
+    // ----- 13. Hole tyrant (everybody worse than X) -----
+    if (withScores.length >= 2) {
+        for (let i = 0; i < 18; i++) {
+            const par = COURSE.par[i];
+            const scores = withScores.map(r => r.scores[i]).filter(s => s !== null && s !== undefined);
+            if (scores.length === withScores.length) {
+                // Group's collective worst hole — everyone N over par or worse
+                const minOver = Math.min(...scores) - par;
+                if (minOver >= 2 && withScores.length >= 3) {
+                    takeaways.push(_pick([
+                        'Hole ' + (i + 1) + ' (par ' + par + ') is the group\'s bogey — best score here is +' + minOver + '.',
+                        'Nobody breaks par on hole ' + (i + 1) + ' — best in the group is +' + minOver + '.'
+                    ], seed, 18 + i));
+                    break;
+                }
+            }
+        }
+    }
+
+    if (takeaways.length === 0) return '';
+
+    // Cap at 6 lines so it's readable
+    const final = takeaways.slice(0, 6);
+    let block = '<div class="h2h-takeaways"><h4>🥊 Banter fuel</h4><ul>';
+    for (const t of final) block += '<li>' + t + '</li>';
+    block += '</ul></div>';
+    return block;
 }
 
 // ============ EXPORT FUNCTIONS ============
@@ -1737,6 +2475,7 @@ function getTableTitle(type) {
         case 'eclectic-nett': return "Captain's Eclectic Cup (Nett) " + year;
         case 'eclectic-insights': return "Gross Eclectic Insights " + year;
         case 'eclectic-nett-insights': return "Nett Eclectic Insights " + year;
+        case 'head-to-head': return 'Head-to-Head Comparison ' + year;
     }
 }
 
@@ -1956,6 +2695,8 @@ function renderFixtureTracker() {
 
 document.addEventListener('DOMContentLoaded', () => {
     initUI();
+    loadPalsFromStorage();
+    initPalsSearch();
     // Check if preloaded data has been updated since last save
     const hasPreloaded = typeof PRELOADED_CSV_FILES !== 'undefined' && PRELOADED_CSV_FILES.length > 0;
     const currentPreloadedVersion = (typeof PRELOADED_DATA_VERSION !== 'undefined') ? PRELOADED_DATA_VERSION : 0;

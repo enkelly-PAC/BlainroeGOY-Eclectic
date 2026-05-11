@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Blainroe Golf Club - GOY &amp; Eclectic Cup</title>
-    <link rel="stylesheet" href="css/styles.css?v=14">
+    <link rel="stylesheet" href="css/styles.css?v=16">
 </head>
 <body>
     <header>
@@ -26,6 +26,7 @@
                 <button class="tab" onclick="switchTab('eclectic-nett')">🎯 Eclectic Nett</button>
                 <button class="tab" onclick="switchTab('eclectic-insights')">📊 Gross Insights</button>
                 <button class="tab" onclick="switchTab('eclectic-nett-insights')">📊 Nett Insights</button>
+                <button class="tab" onclick="switchTab('head-to-head')">⚔️ Head-to-Head</button>
             </div>
 
             <!-- GOY Table -->
@@ -87,6 +88,30 @@
                 </div>
                 <div id="eclectic-nett-insights-container"></div>
             </div>
+
+            <!-- Head-to-Head -->
+            <div id="tab-head-to-head" class="tab-content">
+                <div class="table-header">
+                    <h3>⚔️ Head-to-Head</h3>
+                    <div class="export-buttons">
+                        <button class="btn btn-sm" onclick="exportHTML('head-to-head')">📄 HTML</button>
+                        <button class="btn btn-sm" onclick="exportPDF('head-to-head')">📑 PDF</button>
+                    </div>
+                </div>
+                <div class="h2h-picker">
+                    <p class="help-text">Pick up to 8 players to compare across GOY, Eclectic Gross &amp; Nett. Your list is saved only in this browser &mdash; nobody else can see it.</p>
+                    <div class="h2h-search-wrapper">
+                        <input type="text" id="h2h-search-input" class="h2h-search-input" placeholder="Type a player name to add…" autocomplete="off">
+                        <div id="h2h-search-dropdown" class="h2h-dropdown" hidden></div>
+                    </div>
+                    <div id="h2h-chips" class="h2h-chips"></div>
+                    <div class="h2h-actions">
+                        <button class="btn btn-sm btn-clear" onclick="clearAllPals()">🗑️ Clear all</button>
+                        <span id="h2h-count" class="h2h-count"></span>
+                    </div>
+                </div>
+                <div class="table-wrapper" id="head-to-head-table-container"></div>
+            </div>
         </section>
 
         <!-- Upload Section -->
@@ -140,6 +165,6 @@
 
     <script src="js/fixtures.js"></script>
     <script src="js/preloaded-data.js"></script>
-    <script src="js/app.js?v=15"></script>
+    <script src="js/app.js?v=16"></script>
 </body>
 </html>

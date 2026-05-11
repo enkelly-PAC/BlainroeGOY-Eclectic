@@ -172,6 +172,157 @@ tr.si-row td { background: #f0f4f0; font-size: 0.75rem; color: #888; }
 .table-header h3 { color: #1a5e1a; font-size: 1.15rem; }
 .export-buttons { display: flex; gap: 0.5rem; }
 
+/* ============ HEAD-TO-HEAD ============ */
+.h2h-picker {
+    background: #f7faf7;
+    border: 1px solid #d8e6d8;
+    border-radius: 10px;
+    padding: 1rem 1.1rem;
+    margin-bottom: 1.25rem;
+}
+.h2h-search-wrapper {
+    position: relative;
+    margin-bottom: 0.75rem;
+}
+.h2h-search-input {
+    width: 100%;
+    padding: 0.6rem 0.9rem;
+    border: 1px solid #b0c8b0;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-family: inherit;
+    background: white;
+    color: #1a2e1a;
+}
+.h2h-search-input:focus {
+    outline: none;
+    border-color: #2d8e2d;
+    box-shadow: 0 0 0 3px rgba(45,142,45,0.15);
+}
+.h2h-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid #b0c8b0;
+    border-top: none;
+    border-radius: 0 0 8px 8px;
+    max-height: 280px;
+    overflow-y: auto;
+    z-index: 50;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+.h2h-dropdown-item {
+    padding: 0.5rem 0.9rem;
+    cursor: pointer;
+    font-size: 0.92rem;
+    border-bottom: 1px solid #eef4ee;
+}
+.h2h-dropdown-item:last-child { border-bottom: none; }
+.h2h-dropdown-item:hover,
+.h2h-dropdown-item.active { background: #eaf4ea; color: #1a5e1a; }
+.h2h-dropdown-item.disabled { color: #bbb; cursor: not-allowed; background: #fafafa; }
+.h2h-dropdown-empty {
+    padding: 0.7rem 0.9rem;
+    color: #888;
+    font-size: 0.9rem;
+    font-style: italic;
+}
+.h2h-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    min-height: 1.5rem;
+    margin-bottom: 0.6rem;
+}
+.h2h-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    background: #1a5e1a;
+    color: white;
+    padding: 0.3rem 0.6rem 0.3rem 0.75rem;
+    border-radius: 999px;
+    font-size: 0.88rem;
+    font-weight: 600;
+}
+.h2h-chip-remove {
+    background: rgba(255,255,255,0.25);
+    border: none;
+    color: white;
+    width: 1.2rem;
+    height: 1.2rem;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 0.8rem;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+.h2h-chip-remove:hover { background: rgba(255,255,255,0.45); }
+.h2h-chips-empty {
+    color: #888;
+    font-style: italic;
+    font-size: 0.9rem;
+}
+.h2h-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+.h2h-count { color: #4a5a4a; font-size: 0.85rem; }
+.btn-clear { background: #eee; color: #444; }
+.btn-clear:hover { background: #ddd; }
+
+.h2h-empty-state {
+    text-align: center;
+    padding: 2.5rem 1rem;
+    color: #4a5a4a;
+}
+.h2h-empty-state .emoji { font-size: 2.5rem; display: block; margin-bottom: 0.5rem; }
+
+.h2h-section { margin-top: 1.5rem; }
+.h2h-section h4 {
+    color: #1a5e1a;
+    font-size: 1.05rem;
+    margin-bottom: 0.5rem;
+    padding-bottom: 0.35rem;
+    border-bottom: 1px solid #d8e6d8;
+}
+.h2h-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.93rem;
+}
+.h2h-table thead { background: #1a5e1a; color: white; }
+.h2h-table th, .h2h-table td {
+    padding: 0.5rem 0.6rem;
+    border-bottom: 1px solid #e5ece5;
+    text-align: left;
+}
+.h2h-table th { font-weight: 600; font-size: 0.85rem; }
+.h2h-table tbody tr:nth-child(even) { background: #f7faf7; }
+.h2h-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+.h2h-table .hole { text-align: center; padding: 0.35rem 0.3rem; font-variant-numeric: tabular-nums; }
+.h2h-table tr.h2h-leader { background: #fff7cf !important; font-weight: 600; }
+.h2h-table tr.h2h-leader td:first-child::before { content: "🥇 "; }
+.h2h-trophy { color: #b8861b; font-size: 0.9rem; margin-left: 0.25rem; }
+.h2h-takeaways {
+    background: #fffdf5;
+    border-left: 4px solid #ffd95a;
+    border-radius: 4px;
+    padding: 0.8rem 1rem;
+    margin-top: 1rem;
+}
+.h2h-takeaways h4 { color: #5a4500; border: none; padding: 0; }
+.h2h-takeaways ul { margin-left: 1.2rem; }
+.h2h-takeaways li { margin: 0.3rem 0; }
+
 /* ============ FOOTER ============ */
 footer {
     text-align: center;

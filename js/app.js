@@ -1260,12 +1260,58 @@ function renderNettEclecticInsights(data) {
     // Closest nett to scratch
     const closestToScratch = byNett.slice(0, 5);
 
+    // Per-player nett shot tallies on the eclectic card (eagle/birdie/par)
+    const playerNettTallies = nettPlayers.map(p => {
+        let ne = 0, nb = 0, np = 0, filled = 0;
+        for (let h = 0; h < 18; h++) {
+            const s = p.scores[h];
+            if (s === null || s === undefined) continue;
+            const strokes = getStrokesOnHole(p.handicap, h);
+            const diff = (s - strokes) - COURSE.par[h];
+            filled++;
+            if (diff <= -2) ne++;
+            else if (diff === -1) nb++;
+            else if (diff === 0) np++;
+        }
+        return {
+            name: p.name, handicap: p.handicap, net: p.net, gross: p.gross,
+            nettEagles: ne, nettBirdies: nb, nettPars: np, filledHoles: filled
+        };
+    });
+    const totalNettEagles = playerNettTallies.reduce((a, p) => a + p.nettEagles, 0);
+    const totalNettBirdies = playerNettTallies.reduce((a, p) => a + p.nettBirdies, 0);
+    const totalNettPars = playerNettTallies.reduce((a, p) => a + p.nettPars, 0);
+    const mostNettBirdies = [...playerNettTallies]
+        .sort((a, b) => b.nettBirdies - a.nettBirdies || b.nettEagles - a.nettEagles)
+        .slice(0, 5);
+    const mostNettPars = [...playerNettTallies]
+        .sort((a, b) => b.nettPars - a.nettPars
+            || (b.nettPars / Math.max(1, b.filledHoles)) - (a.nettPars / Math.max(1, a.filledHoles)))
+        .slice(0, 5);
+    const nettEaglePlayers = playerNettTallies
+        .filter(p => p.nettEagles > 0)
+        .sort((a, b) => b.nettEagles - a.nettEagles);
+
     // ---- BUILD HTML ----
     let html = '<div class="insights-grid">';
 
-    // Overview
+    // Eclectic-card-derived overview (mirrors Gross Insights banner)
     html += '<div class="insight-card insight-wide">';
     html += '<h4>📊 Nett Season Overview</h4>';
+    html += '<div class="insight-stats">';
+    html += '<div class="stat-item"><span class="stat-num">' + players.length + '</span><span class="stat-label">Players</span></div>';
+    html += '<div class="stat-item"><span class="stat-num">' + nettPlayers.length + '</span><span class="stat-label">Full Cards</span></div>';
+    html += '<div class="stat-item"><span class="stat-num">' + totalNettEagles + '</span><span class="stat-label">🟡 Nett Eagles</span></div>';
+    html += '<div class="stat-item"><span class="stat-num">' + totalNettBirdies + '</span><span class="stat-label">🔴 Nett Birdies</span></div>';
+    html += '<div class="stat-item"><span class="stat-num">' + totalNettPars + '</span><span class="stat-label">🟢 Nett Pars</span></div>';
+    if (byNett.length > 0) {
+        html += '<div class="stat-item"><span class="stat-num">' + byNett[0].net + '</span><span class="stat-label">Best Nett</span></div>';
+    }
+    html += '</div></div>';
+
+    // Overview
+    html += '<div class="insight-card insight-wide">';
+    html += '<h4>🎯 Nett Field Snapshot</h4>';
     html += '<div class="insight-stats">';
     html += '<div class="stat-item"><span class="stat-num">' + nettPlayers.length + '</span><span class="stat-label">Full Nett Cards</span></div>';
     html += '<div class="stat-item"><span class="stat-num">' + byNett[0].net + '</span><span class="stat-label">Best Nett</span></div>';
@@ -1289,6 +1335,41 @@ function renderNettEclecticInsights(data) {
         html += '<td style="color:' + color + ';font-weight:700">' + sign + p.vsPar + '</td></tr>';
     }
     html += '</tbody></table></div>';
+
+    // Most Nett Birdies (eclectic card)
+    html += '<div class="insight-card">';
+    html += '<h4>🔴 Most Nett Birdies</h4>';
+    html += '<table class="insight-table"><thead><tr><th>Player</th><th>Birdies</th><th>Eagles</th></tr></thead><tbody>';
+    for (const p of mostNettBirdies) {
+        html += '<tr><td>' + escapeHtml(displayName(p.name)) + '</td>';
+        html += '<td><strong>' + p.nettBirdies + '</strong></td>';
+        html += '<td>' + (p.nettEagles > 0 ? '🟡 ' + p.nettEagles : '-') + '</td></tr>';
+    }
+    html += '</tbody></table></div>';
+
+    // Consistency Kings (Nett)
+    html += '<div class="insight-card">';
+    html += '<h4>🟢 Consistency Kings (Nett)</h4>';
+    html += '<table class="insight-table"><thead><tr><th>Player</th><th>Pars</th><th>Par %</th></tr></thead><tbody>';
+    for (const p of mostNettPars) {
+        const pct = p.filledHoles > 0 ? (p.nettPars / p.filledHoles * 100).toFixed(0) : 0;
+        html += '<tr><td>' + escapeHtml(displayName(p.name)) + '</td>';
+        html += '<td><strong>' + p.nettPars + '</strong></td>';
+        html += '<td>' + pct + '%</td></tr>';
+    }
+    html += '</tbody></table></div>';
+
+    // Nett Eagle Club
+    if (nettEaglePlayers.length > 0) {
+        html += '<div class="insight-card">';
+        html += '<h4>🦅 Nett Eagle Club</h4>';
+        html += '<table class="insight-table"><thead><tr><th>Player</th><th>Eagles</th></tr></thead><tbody>';
+        for (const p of nettEaglePlayers) {
+            html += '<tr><td>' + escapeHtml(displayName(p.name)) + '</td>';
+            html += '<td><strong>🟡 ' + p.nettEagles + '</strong></td></tr>';
+        }
+        html += '</tbody></table></div>';
+    }
 
     // Biggest climbers
     html += '<div class="insight-card">';
@@ -1608,7 +1689,7 @@ function getInsightsExportCSS(forPrint) {
     const cardBreak = forPrint ? 'break-inside: avoid; page-break-inside: avoid;' : '';
     const printColor = forPrint ? ' -webkit-print-color-adjust: exact; print-color-adjust: exact;' : '';
     return [
-        '.insights-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1rem; margin-top: 0.5rem; }',
+        '.insights-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 1rem; margin-top: 0.5rem; }',
         '.insight-card { background: white; border: 1px solid #d0d0d0; border-radius: 6px; padding: 0.85rem 1rem; box-shadow: 0 1px 2px rgba(0,0,0,0.05); ' + cardBreak + ' }',
         '.insight-wide { grid-column: 1 / -1; }',
         '.insight-card h4 { margin: 0 0 0.6rem 0; color: #1a5e1a; font-size: 1rem; font-weight: 700; }',
@@ -1617,8 +1698,8 @@ function getInsightsExportCSS(forPrint) {
         '.stat-num { font-size: 1.5rem; font-weight: 700; color: #1a5e1a; }',
         '.stat-label { font-size: 0.72rem; color: #888; text-align: center; }',
         '.insight-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }',
-        '.insight-table th { background: #e8f0e8; color: #333; padding: 0.35rem 0.5rem; text-align: center; font-weight: 600; font-size: 0.72rem; border-bottom: 2px solid #c0d0c0; white-space: nowrap;' + printColor + ' }',
-        '.insight-table td { padding: 0.3rem 0.5rem; text-align: center; border-bottom: 1px solid #eee; white-space: nowrap;' + printColor + ' }',
+        '.insight-table th { background: #e8f0e8; color: #333; padding: 0.35rem 0.5rem; text-align: center; font-weight: 600; font-size: 0.72rem; border-bottom: 2px solid #c0d0c0;' + printColor + ' }',
+        '.insight-table td { padding: 0.3rem 0.5rem; text-align: center; border-bottom: 1px solid #eee;' + printColor + ' }',
         '.insight-table td:first-child, .insight-table th:first-child { text-align: left; }',
         '.insight-table td:nth-child(2), .insight-table th:nth-child(2) { text-align: left; }',
         '.insight-subtitle { font-size: 0.78rem; color: #888; margin: -0.25rem 0 0.5rem 0; }',

@@ -18,50 +18,6 @@
     </header>
 
     <main>
-        <!-- Upload Section -->
-        <section id="upload-section" class="card">
-            <h2>📁 Upload Competition Data</h2>
-            <p class="help-text">Upload CSV exports from Handicap Master. You can upload multiple files at once.</p>
-            <div class="upload-area" id="upload-area">
-                <div class="upload-icon">📄</div>
-                <p>Drag &amp; drop CSV files here, or click to browse</p>
-                <input type="file" id="file-input" multiple accept=".csv" hidden>
-                <button class="btn btn-primary" onclick="document.getElementById('file-input').click()">Choose Files</button>
-            </div>
-        </section>
-
-        <!-- GOY Fixture Tracker -->
-        <section id="fixture-tracker" class="card" style="display:none">
-            <h2>📅 GOY Competition Tracker <span id="fixture-year-badge" class="year-badge"></span></h2>
-            <p class="help-text">Shows all GOY-qualifying competitions for the season. Competitions are auto-detected when you upload CSVs.</p>
-            <div id="fixture-tracker-content"></div>
-        </section>
-
-        <!-- Loaded Competitions -->
-        <section id="competitions-section" class="card" style="display:none">
-            <h2>📋 Loaded Competitions</h2>
-            <p class="help-text">GOY and Captain's flags are auto-set from the fixture list. You can override manually if needed.</p>
-            <div class="table-wrapper">
-                <table id="competitions-table">
-                    <thead>
-                        <tr>
-                            <th>Competition</th>
-                            <th>Date</th>
-                            <th>Players</th>
-                            <th>Type</th>
-                            <th>GOY</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
-            </div>
-            <div class="actions-bar">
-                <button class="btn btn-primary" onclick="generateTables()">🏆 Generate Tables</button>
-                <button class="btn btn-secondary" onclick="clearAllData()">🗑️ Clear All</button>
-            </div>
-        </section>
-
         <!-- Results Tabs -->
         <section id="results-section" class="card" style="display:none">
             <div class="tabs">
@@ -130,6 +86,50 @@
                     </div>
                 </div>
                 <div id="eclectic-nett-insights-container"></div>
+            </div>
+        </section>
+
+        <!-- Upload Section -->
+        <section id="upload-section" class="card">
+            <h2>📁 Upload Competition Data</h2>
+            <p class="help-text">Upload CSV exports from Handicap Master. You can upload multiple files at once.</p>
+            <div class="upload-area" id="upload-area">
+                <div class="upload-icon">📄</div>
+                <p>Drag &amp; drop CSV files here, or click to browse</p>
+                <input type="file" id="file-input" multiple accept=".csv" hidden>
+                <button class="btn btn-primary" onclick="document.getElementById('file-input').click()">Choose Files</button>
+            </div>
+        </section>
+
+        <!-- GOY Fixture Tracker -->
+        <section id="fixture-tracker" class="card" style="display:none">
+            <h2>📅 GOY Competition Tracker <span id="fixture-year-badge" class="year-badge"></span></h2>
+            <p class="help-text">Shows all GOY-qualifying competitions for the season. Competitions are auto-detected when you upload CSVs.</p>
+            <div id="fixture-tracker-content"></div>
+        </section>
+
+        <!-- Loaded Competitions -->
+        <section id="competitions-section" class="card" style="display:none">
+            <h2>📋 Loaded Competitions</h2>
+            <p class="help-text">GOY and Captain's flags are auto-set from the fixture list. You can override manually if needed.</p>
+            <div class="table-wrapper">
+                <table id="competitions-table">
+                    <thead>
+                        <tr>
+                            <th>Competition</th>
+                            <th>Date</th>
+                            <th>Players</th>
+                            <th>Type</th>
+                            <th>GOY</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <div class="actions-bar">
+                <button class="btn btn-primary" onclick="generateTables()">🏆 Generate Tables</button>
+                <button class="btn btn-secondary" onclick="clearAllData()">🗑️ Clear All</button>
             </div>
         </section>
     </main>

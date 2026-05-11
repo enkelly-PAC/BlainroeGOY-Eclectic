@@ -1779,7 +1779,8 @@ function getAllPlayerNames() {
     if (appState.eclecticData && appState.eclecticData.players) {
         for (const p of appState.eclecticData.players) names.add(p.name.trim());
     }
-    return Array.from(names).sort((a, b) => a.localeCompare(b));
+    // Sort by the displayed form (first name first) so the dropdown reads alphabetically as the user scans it.
+    return Array.from(names).sort((a, b) => displayName(a).localeCompare(displayName(b)));
 }
 
 function normalisePalName(name) { return (name || '').trim().toLowerCase(); }

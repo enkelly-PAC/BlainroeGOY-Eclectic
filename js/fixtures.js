@@ -18,6 +18,7 @@ const GOY_FIXTURES = {
             name: "Men's March Medal (GOY)",
             keywords: ["march medal"],
             dates: ["2026-04-04", "2026-04-05"],
+            isGOY: true,
             isCaptains: false,
             category: "Medal"
         },
@@ -25,6 +26,7 @@ const GOY_FIXTURES = {
             name: "Men's April Medal",
             keywords: ["april medal"],
             dates: ["2026-04-18", "2026-04-19"],
+            isGOY: true,
             isCaptains: false,
             category: "Medal"
         },
@@ -32,6 +34,7 @@ const GOY_FIXTURES = {
             name: "Peter Roper Cup (GOY)",
             keywords: ["peter roper"],
             dates: ["2026-04-25", "2026-04-26"],
+            isGOY: true,
             isCaptains: false,
             category: "GOY Trophy"
         },
@@ -39,6 +42,7 @@ const GOY_FIXTURES = {
             name: "Men's May Medal",
             keywords: ["may medal"],
             dates: ["2026-05-02", "2026-05-03"],
+            isGOY: true,
             isCaptains: false,
             category: "Medal"
         },
@@ -46,6 +50,7 @@ const GOY_FIXTURES = {
             name: "McCrea Cup (GOY)",
             keywords: ["mccrea"],
             dates: ["2026-05-09", "2026-05-10"],
+            isGOY: true,
             isCaptains: false,
             category: "GOY Trophy"
         },
@@ -53,6 +58,7 @@ const GOY_FIXTURES = {
             name: "Lady Captain's Prize to Men (GOY)",
             keywords: ["lady captain", "hilary flynn"],
             dates: ["2026-05-23", "2026-05-24"],
+            isGOY: true,
             isCaptains: false,
             category: "GOY Trophy"
         },
@@ -60,6 +66,7 @@ const GOY_FIXTURES = {
             name: "President's Prize to Men",
             keywords: ["president's prize to men", "presidents prize to men"],
             dates: ["2026-05-30"],
+            isGOY: true,
             isCaptains: false,
             category: "President's Prize"
         },
@@ -67,6 +74,7 @@ const GOY_FIXTURES = {
             name: "Men's June Medal",
             keywords: ["june medal"],
             dates: ["2026-06-06", "2026-06-07"],
+            isGOY: true,
             isCaptains: false,
             category: "Medal"
         },
@@ -74,6 +82,7 @@ const GOY_FIXTURES = {
             name: "WH Scott Trophy (GOY)",
             keywords: ["wh scott", "w.h. scott", "w h scott"],
             dates: ["2026-06-13", "2026-06-14"],
+            isGOY: true,
             isCaptains: false,
             category: "GOY Trophy"
         },
@@ -81,6 +90,7 @@ const GOY_FIXTURES = {
             name: "Lady President's Prize to Men (GOY)",
             keywords: ["lady president"],
             dates: ["2026-06-27", "2026-06-28"],
+            isGOY: true,
             isCaptains: false,
             category: "GOY Trophy"
         },
@@ -88,6 +98,7 @@ const GOY_FIXTURES = {
             name: "Men's July Medal",
             keywords: ["july medal"],
             dates: ["2026-07-11", "2026-07-12"],
+            isGOY: true,
             isCaptains: false,
             category: "Medal"
         },
@@ -95,6 +106,7 @@ const GOY_FIXTURES = {
             name: "Captain's Prize to Men",
             keywords: ["captains prize", "captain's prize", "gary kennedy"],
             dates: ["2026-07-18", "2026-07-19", "2026-07-25"],
+            isGOY: true,
             isCaptains: true,
             category: "Captain's Prize"
         },
@@ -102,6 +114,7 @@ const GOY_FIXTURES = {
             name: "Men's August Medal",
             keywords: ["august medal"],
             dates: ["2026-08-08", "2026-08-09"],
+            isGOY: true,
             isCaptains: false,
             category: "Medal"
         },
@@ -109,6 +122,7 @@ const GOY_FIXTURES = {
             name: "Professional's Prize & PGA Tankard (GOY)",
             keywords: ["professional", "pga tankard"],
             dates: ["2026-08-15", "2026-08-16"],
+            isGOY: true,
             isCaptains: false,
             category: "GOY Trophy"
         },
@@ -116,6 +130,7 @@ const GOY_FIXTURES = {
             name: "Men's September Medal",
             keywords: ["september medal"],
             dates: ["2026-09-05", "2026-09-06"],
+            isGOY: true,
             isCaptains: false,
             category: "Medal"
         },
@@ -123,6 +138,7 @@ const GOY_FIXTURES = {
             name: "C.G. Cooney Trophy (GOY)",
             keywords: ["cooney"],
             dates: ["2026-09-12", "2026-09-13"],
+            isGOY: true,
             isCaptains: false,
             category: "GOY Trophy"
         },
@@ -130,6 +146,7 @@ const GOY_FIXTURES = {
             name: "Men's October Medal",
             keywords: ["october medal"],
             dates: ["2026-09-26", "2026-09-27"],
+            isGOY: true,
             isCaptains: false,
             category: "Medal"
         }
@@ -180,7 +197,9 @@ function matchCompetitionToFixture(compName, compDateStr) {
         }
 
         if (keywordMatch || (dateMatch && hasGOYMarker)) {
-            return { isGOY: true, isCaptains: fixture.isCaptains, fixture: fixture };
+            // Honour the fixture's explicit isGOY flag (defaults to true for back-compat)
+            const goy = (fixture.isGOY === false) ? false : true;
+            return { isGOY: goy, isCaptains: fixture.isCaptains, fixture: fixture };
         }
     }
 

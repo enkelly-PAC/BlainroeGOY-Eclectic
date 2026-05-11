@@ -2743,7 +2743,9 @@ function renderFixtureTracker() {
     for (const f of calendar) {
         const statusClass = f.uploaded ? 'fixture-done' : (f.isPast ? 'fixture-missed' : (f.isCurrent ? 'fixture-current' : 'fixture-upcoming'));
         const icon = f.uploaded ? '✅' : (f.isPast ? '⚠️' : (f.isCurrent ? '🔵' : '⬜'));
-        const captainBadge = f.isCaptains ? ' <span class="captain-badge">×2</span>' : '';
+        const goyBadge = (f.isGOY !== false) ? ' <span class="goy-badge" title="Counts towards Golfer of the Year">GOY</span>' : '';
+        const captainBadge = f.isCaptains ? ' <span class="captain-badge" title="Double GOY points">×2</span>' : '';
+        const displayName = (f.name || '').replace(/\s*\(GOY\)\s*/gi, '').trim();
         const dateStr = f.dates.map(d => {
             const dt = new Date(d);
             return dt.getDate() + '/' + (dt.getMonth() + 1);
@@ -2752,7 +2754,7 @@ function renderFixtureTracker() {
         html += '<div class="fixture-card ' + statusClass + '">' +
             '<span class="fixture-icon">' + icon + '</span>' +
             '<div class="fixture-detail">' +
-            '<span class="fixture-name">' + f.name + captainBadge + '</span>' +
+            '<span class="fixture-name">' + displayName + goyBadge + captainBadge + '</span>' +
             '<span class="fixture-date">' + dateStr + '</span>' +
             '</div>' +
             '</div>';

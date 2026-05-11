@@ -505,6 +505,18 @@ footer {
     margin-left: 0.3rem;
 }
 
+.goy-badge {
+    background: #2e7d32;
+    color: white;
+    font-size: 0.55rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    padding: 0.05rem 0.3rem;
+    border-radius: 3px;
+    margin-left: 0.3rem;
+    vertical-align: middle;
+}
+
 .fixture-done { border-color: #4caf50; background: #f1f8e9; }
 .fixture-missed { border-color: #ff9800; background: #fff8e1; }
 .fixture-current { border-color: #2196f3; background: #e3f2fd; }

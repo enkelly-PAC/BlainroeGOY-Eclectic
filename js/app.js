@@ -1414,12 +1414,12 @@ function renderNettEclecticInsights(data) {
     }
     html += '</tbody></table></div>';
 
-    // Nett Eagle Club
+    // Most Nett Eagles (top 5)
     if (nettEaglePlayers.length > 0) {
         html += '<div class="insight-card">';
-        html += '<h4>🦅 Nett Eagle Club</h4>';
+        html += '<h4>🦅 Most Nett Eagles</h4>';
         html += '<table class="insight-table"><thead><tr><th>Player</th><th>Eagles</th></tr></thead><tbody>';
-        for (const p of nettEaglePlayers) {
+        for (const p of nettEaglePlayers.slice(0, 5)) {
             html += '<tr><td>' + escapeHtml(displayName(p.name)) + '</td>';
             html += '<td><strong>🟡 ' + p.nettEagles + '</strong></td></tr>';
         }

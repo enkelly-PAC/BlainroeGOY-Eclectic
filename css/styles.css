@@ -500,3 +500,11 @@ footer {
     margin-left: 0.3em;
     font-style: italic;
 }
+.stat-num .tie-note {
+    font-weight: 400;
+    color: #888;
+    font-size: 0.6em;
+    margin-left: 0.25em;
+    font-style: italic;
+    letter-spacing: 0;
+}

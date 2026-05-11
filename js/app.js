@@ -1764,6 +1764,7 @@ function getInsightsExportCSS(forPrint) {
         '.insight-stats { display: flex; flex-wrap: wrap; gap: 1rem; justify-content: center; }',
         '.stat-item { display: flex; flex-direction: column; align-items: center; min-width: 70px; }',
         '.stat-num { font-size: 1.5rem; font-weight: 700; color: #1a5e1a; }',
+        '.stat-num .tie-note { font-weight: 400; color: #888; font-size: 0.6em; margin-left: 0.25em; font-style: italic; }',
         '.stat-label { font-size: 0.72rem; color: #888; text-align: center; }',
         '.insight-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }',
         '.insight-table th { background: #e8f0e8; color: #333; padding: 0.35rem 0.5rem; text-align: center; font-weight: 600; font-size: 0.72rem; border-bottom: 2px solid #c0d0c0;' + printColor + ' }',

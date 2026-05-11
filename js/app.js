@@ -716,14 +716,18 @@ function renderEclecticGrossTable(data) {
     html += '<tr><th>Overall</th><th>Name</th><th class="rnds-col">Rounds</th>';
     for (let h = 1; h <= 18; h++) {
         html += '<th>' + h + '</th>';
+        if (h === 9) html += '<th class="total-col">Out</th>';
     }
+    html += '<th class="total-col">In</th>';
     html += '<th class="total-col">Gross</th></tr>';
 
     // Par row
     html += '<tr class="par-row"><th></th><th style="text-align:left">Par</th><th></th>';
     for (let h = 0; h < 18; h++) {
         html += '<th>' + COURSE.par[h] + '</th>';
+        if (h === 8) html += '<th>' + COURSE.outPar + '</th>';
     }
+    html += '<th>' + COURSE.inPar + '</th>';
     html += '<th>72</th></tr>';
     html += '</thead><tbody>';
 
@@ -744,16 +748,20 @@ function renderEclecticGrossTable(data) {
         html += '<td class="player-name">' + escapeHtml(displayName(p.name)) + '</td>';
         html += '<td class="rnds-col">' + p.rounds + '</td>';
 
+        let outSum = 0, inSum = 0;
         for (let h = 0; h < 18; h++) {
             const s = p.scores[h];
             if (s === null) {
                 html += '<td>-</td>';
             } else {
+                if (h < 9) outSum += s; else inSum += s;
                 const diff = s - COURSE.par[h];
                 const style = getScoreCellStyle(diff);
                 html += '<td' + (style ? ' style="' + style + '"' : '') + '>' + s + '</td>';
             }
+            if (h === 8) html += '<td class="total-cell">' + outSum + '</td>';
         }
+        html += '<td class="total-cell">' + inSum + '</td>';
 
         html += '<td class="total-cell">' + (p.gross !== null ? p.gross : 'NR') + '</td>';
         html += '</tr>';
@@ -792,14 +800,18 @@ function renderEclecticNettTable(data) {
     html += '<tr><th>Overall</th><th>Name</th><th class="rnds-col">Rounds</th>';
     for (let h = 1; h <= 18; h++) {
         html += '<th>' + h + '</th>';
+        if (h === 9) html += '<th class="total-col">Out</th>';
     }
+    html += '<th class="total-col">In</th>';
     html += '<th class="total-col">Gross</th><th>H\'cap</th><th class="total-col">Net</th></tr>';
 
     // Par row
     html += '<tr class="par-row"><th></th><th style="text-align:left">Par</th><th></th>';
     for (let h = 0; h < 18; h++) {
         html += '<th>' + COURSE.par[h] + '</th>';
+        if (h === 8) html += '<th>' + COURSE.outPar + '</th>';
     }
+    html += '<th>' + COURSE.inPar + '</th>';
     html += '<th>72</th><th></th><th></th></tr>';
     html += '</thead><tbody>';
 
@@ -820,17 +832,21 @@ function renderEclecticNettTable(data) {
         html += '<td class="player-name">' + escapeHtml(displayName(p.name)) + '</td>';
         html += '<td class="rnds-col">' + p.rounds + '</td>';
 
+        let outSum = 0, inSum = 0;
         for (let h = 0; h < 18; h++) {
             const s = p.scores[h];
             if (s === null) {
                 html += '<td>-</td>';
             } else {
+                if (h < 9) outSum += s; else inSum += s;
                 // Color based on gross score vs par (same as gross table)
                 const diff = s - COURSE.par[h];
                 const style = getScoreCellStyle(diff);
                 html += '<td' + (style ? ' style="' + style + '"' : '') + '>' + s + '</td>';
             }
+            if (h === 8) html += '<td class="total-cell">' + outSum + '</td>';
         }
+        html += '<td class="total-cell">' + inSum + '</td>';
 
         html += '<td class="total-cell">' + (p.gross !== null ? p.gross : 'NR') + '</td>';
         html += '<td>' + (p.handicapDisplay || '-') + '</td>';

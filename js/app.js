@@ -29,7 +29,7 @@ const appState = {
     pals: []
 };
 
-// ============ HEAD-TO-HEAD ============
+// ============ BUDDY BATTLE ============
 const PALS_STORAGE_KEY = 'blainroe_pals';
 const MAX_PALS = 8;
 
@@ -1733,14 +1733,14 @@ function switchTab(tabId) {
     document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
     document.querySelector('[onclick="switchTab(\'' + tabId + '\')"]').classList.add('active');
     document.getElementById('tab-' + tabId).classList.add('active');
-    if (tabId === 'head-to-head') {
+    if (tabId === 'buddy-battle') {
         // Focus the search input for fast typing
         const input = document.getElementById('h2h-search-input');
         if (input) setTimeout(() => input.focus(), 50);
     }
 }
 
-// ============ HEAD-TO-HEAD ENGINE ============
+// ============ BUDDY BATTLE ENGINE ============
 
 function loadPalsFromStorage() {
     try {
@@ -1939,14 +1939,14 @@ function buildEclecticRankMaps(data) {
 }
 
 function renderHeadToHead() {
-    const container = document.getElementById('head-to-head-table-container');
+    const container = document.getElementById('buddy-battle-table-container');
     if (!container) return;
 
     if (appState.pals.length === 0) {
         container.innerHTML =
             '<div class="h2h-empty-state">' +
             '<span class="emoji">👥</span>' +
-            '<p>Add players above to start a head-to-head comparison.</p>' +
+            '<p>Add buddies above to start a buddy battle.</p>' +
             '<p style="margin-top:0.4rem;font-size:0.9rem;">Tip: type a surname to find them quickly.</p>' +
             '</div>';
         return;
@@ -2475,7 +2475,7 @@ function getTableTitle(type) {
         case 'eclectic-nett': return "Captain's Eclectic Cup (Nett) " + year;
         case 'eclectic-insights': return "Gross Eclectic Insights " + year;
         case 'eclectic-nett-insights': return "Nett Eclectic Insights " + year;
-        case 'head-to-head': return 'Head-to-Head Comparison ' + year;
+        case 'buddy-battle': return 'Buddy Battle ' + year;
     }
 }
 

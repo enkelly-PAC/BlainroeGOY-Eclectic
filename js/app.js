@@ -396,10 +396,13 @@ function processUploadedFile(text, filename) {
                 const fixtureMatch = matchCompetitionToFixture(existing.info.name, existing.info.date);
                 if (fixtureMatch) {
                     existing.config.isGOY = fixtureMatch.isGOY;
+                    existing.config.isEclectic = (fixtureMatch.isEclectic !== undefined) ? !!fixtureMatch.isEclectic : true;
                     existing.config.isCaptains = fixtureMatch.isCaptains;
                     existing.fixtureMatch = fixtureMatch.fixture ? fixtureMatch.fixture.name : 'name-marker';
                 } else {
                     existing.config.isGOY = false;
+                    // Leave isEclectic undefined for unmatched comps — calc treats undefined as "include"
+                    // to preserve existing Eclectic-table behaviour for events outside the fixture list.
                     existing.config.isCaptains = false;
                     existing.fixtureMatch = null;
                 }
@@ -412,16 +415,18 @@ function processUploadedFile(text, filename) {
             scorecards: {}, handicaps: parsed.handicaps,
             config: { isGOY: false, isCaptains: false }
         };
-        // Auto-detect GOY and Captain's from fixture list
+        // Auto-detect GOY / Eclectic / Captain's flags from fixture list
         const fixtureMatch = (typeof matchCompetitionToFixture === 'function')
             ? matchCompetitionToFixture(parsed.info.name, parsed.info.date)
             : null;
         if (fixtureMatch) {
             comp.config.isGOY = fixtureMatch.isGOY;
+            comp.config.isEclectic = (fixtureMatch.isEclectic !== undefined) ? !!fixtureMatch.isEclectic : true;
             comp.config.isCaptains = fixtureMatch.isCaptains;
             comp.fixtureMatch = fixtureMatch.fixture ? fixtureMatch.fixture.name : 'name-marker';
         } else {
-            // Fallback: if no fixture match, don't assume GOY
+            // Fallback: if no fixture match, don't assume GOY.
+            // isEclectic stays undefined so the calc treats it as "include" (back-compat).
             comp.config.isGOY = false;
         }
         appState.competitions.push(comp);
@@ -475,16 +480,20 @@ function calculateGOY() {
 // ============ ECLECTIC ENGINE ============
 
 function calculateEclecticFromScorecards() {
-    // Eclectic eligibility: must have a scorecard AND be on/after the
-    // configured Eclectic start date (see fixtures.js -> eclecticStartDate).
-    // This guards against pre-season rounds (e.g. winter Stableford off
-    // yellow tees) being accidentally included via stray scorecards.
+    // Eclectic eligibility: must have a scorecard AND not be explicitly flagged
+    // as non-Eclectic (isEclectic === false). Undefined is treated as "include"
+    // to preserve back-compat with any uploaded event that's outside the fixture list.
+    // The eclecticStartDate (fixtures.js) acts as a backstop: anything dated before
+    // it is excluded regardless of the flag (guards against pre-season rounds).
     const startKey = (typeof GOY_FIXTURES !== 'undefined' && GOY_FIXTURES.eclecticStartDate) || null;
     const compsWithCards = appState.competitions.filter(c => {
         if (!c.hasScorecard) return false;
-        if (!startKey) return true;
-        const dk = extractDateKey(c.info.date);
-        return dk ? dk >= startKey : true;
+        if (c.config.isEclectic === false) return false;
+        if (startKey) {
+            const dk = extractDateKey(c.info.date);
+            if (dk && dk < startKey) return false;
+        }
+        return true;
     });
     if (compsWithCards.length === 0) return null;
 
@@ -2709,10 +2718,13 @@ function loadFromStorage() {
                     const fixtureMatch = matchCompetitionToFixture(comp.info.name, comp.info.date);
                     if (fixtureMatch) {
                         comp.config.isGOY = fixtureMatch.isGOY;
+                        comp.config.isEclectic = (fixtureMatch.isEclectic !== undefined) ? !!fixtureMatch.isEclectic : true;
                         comp.config.isCaptains = fixtureMatch.isCaptains;
                         comp.fixtureMatch = fixtureMatch.fixture ? fixtureMatch.fixture.name : 'name-marker';
                     } else {
                         comp.config.isGOY = false;
+                        // Preserve isEclectic if already set; otherwise leave undefined
+                        // (calc treats undefined as "include" for back-compat).
                         comp.config.isCaptains = false;
                         comp.fixtureMatch = null;
                     }
@@ -2733,13 +2745,13 @@ function renderFixtureTracker() {
     const container = document.getElementById('fixture-tracker-content');
     if (!section || !container || typeof getFixtureCalendar !== 'function') return;
 
-    const calendar = getFixtureCalendar(appState.competitions);
+    const calendar = getFixtureCalendar(appState.competitions).filter(f => f.isGOY !== false);
     const yearBadge = document.getElementById('fixture-year-badge');
     if (yearBadge) yearBadge.textContent = GOY_FIXTURES.year;
 
     section.style.display = 'block';
 
-    const uploaded = calendar.filter(f => f.uploaded).length;
+    const uploaded = calendar.filter(f => f.uploadedForGOY).length;
     const total = calendar.length;
 
     let html = '<div class="fixture-progress">' +
@@ -2751,9 +2763,9 @@ function renderFixtureTracker() {
 
     html += '<div class="fixture-grid">';
     for (const f of calendar) {
-        const statusClass = f.uploaded ? 'fixture-done' : (f.isPast ? 'fixture-missed' : (f.isCurrent ? 'fixture-current' : 'fixture-upcoming'));
-        const icon = f.uploaded ? '✅' : (f.isPast ? '⚠️' : (f.isCurrent ? '🔵' : '⬜'));
-        const goyBadge = (f.isGOY !== false) ? ' <span class="goy-badge" title="Counts towards Golfer of the Year">GOY</span>' : '';
+        const statusClass = f.uploadedForGOY ? 'fixture-done' : (f.isPast ? 'fixture-missed' : (f.isCurrent ? 'fixture-current' : 'fixture-upcoming'));
+        const icon = f.uploadedForGOY ? '✅' : (f.isPast ? '⚠️' : (f.isCurrent ? '🔵' : '⬜'));
+        const goyBadge = ' <span class="goy-badge" title="Counts towards Golfer of the Year">GOY</span>';
         const captainBadge = f.isCaptains ? ' <span class="captain-badge" title="Double GOY points">×2</span>' : '';
         const displayName = (f.name || '').replace(/\s*\(GOY\)\s*/gi, '').trim();
         const dateStr = f.dates.map(d => {
@@ -2765,6 +2777,53 @@ function renderFixtureTracker() {
             '<span class="fixture-icon">' + icon + '</span>' +
             '<div class="fixture-detail">' +
             '<span class="fixture-name">' + displayName + goyBadge + captainBadge + '</span>' +
+            '<span class="fixture-date">' + dateStr + '</span>' +
+            '</div>' +
+            '</div>';
+    }
+    html += '</div>';
+
+    container.innerHTML = html;
+}
+
+function renderEclecticTracker() {
+    const section = document.getElementById('eclectic-tracker');
+    const container = document.getElementById('eclectic-tracker-content');
+    if (!section || !container || typeof getFixtureCalendar !== 'function') return;
+
+    // Only Eclectic-eligible fixtures (isEclectic !== false). Defaults to included
+    // for back-compat with any fixture entry that pre-dates the isEclectic flag.
+    const calendar = getFixtureCalendar(appState.competitions).filter(f => f.isEclectic !== false);
+    const yearBadge = document.getElementById('eclectic-year-badge');
+    if (yearBadge) yearBadge.textContent = GOY_FIXTURES.year;
+
+    section.style.display = 'block';
+
+    const uploaded = calendar.filter(f => f.uploadedForEclectic).length;
+    const total = calendar.length;
+
+    let html = '<div class="fixture-progress">' +
+        '<div class="fixture-progress-bar">' +
+        '<div class="fixture-progress-fill" style="width:' + Math.round(uploaded / total * 100) + '%"></div>' +
+        '</div>' +
+        '<span class="fixture-progress-text">' + uploaded + ' of ' + total + ' competitions uploaded</span>' +
+        '</div>';
+
+    html += '<div class="fixture-grid">';
+    for (const f of calendar) {
+        const statusClass = f.uploadedForEclectic ? 'fixture-done' : (f.isPast ? 'fixture-missed' : (f.isCurrent ? 'fixture-current' : 'fixture-upcoming'));
+        const icon = f.uploadedForEclectic ? '✅' : (f.isPast ? '⚠️' : (f.isCurrent ? '🔵' : '⬜'));
+        const goyBadge = (f.isGOY === false) ? '' : ' <span class="goy-badge" title="Also counts towards Golfer of the Year">GOY</span>';
+        const displayName = (f.name || '').replace(/\s*\(GOY\)\s*/gi, '').trim();
+        const dateStr = f.dates.map(d => {
+            const dt = new Date(d);
+            return dt.getDate() + '/' + (dt.getMonth() + 1);
+        }).join(', ');
+
+        html += '<div class="fixture-card ' + statusClass + '">' +
+            '<span class="fixture-icon">' + icon + '</span>' +
+            '<div class="fixture-detail">' +
+            '<span class="fixture-name">' + displayName + goyBadge + '</span>' +
             '<span class="fixture-date">' + dateStr + '</span>' +
             '</div>' +
             '</div>';
@@ -2809,4 +2868,5 @@ document.addEventListener('DOMContentLoaded', () => {
         saveToStorage();
     }
     renderFixtureTracker();
+    renderEclecticTracker();
 });

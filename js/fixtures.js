@@ -24,14 +24,25 @@ const GOY_FIXTURES = {
             keywords: ["march medal"],
             dates: ["2026-04-04", "2026-04-05"],
             isGOY: true,
+            isEclectic: true,
             isCaptains: false,
             category: "Medal"
+        },
+        {
+            name: "Men's Singles Stableford (April)",
+            keywords: ["singles stableford"],
+            dates: ["2026-04-11", "2026-04-12"],
+            isGOY: false,
+            isEclectic: true,
+            isCaptains: false,
+            category: "Singles Stableford"
         },
         {
             name: "Men's April Medal",
             keywords: ["april medal"],
             dates: ["2026-04-18", "2026-04-19"],
             isGOY: true,
+            isEclectic: true,
             isCaptains: false,
             category: "Medal"
         },
@@ -40,6 +51,7 @@ const GOY_FIXTURES = {
             keywords: ["peter roper"],
             dates: ["2026-04-25", "2026-04-26"],
             isGOY: true,
+            isEclectic: true,
             isCaptains: false,
             category: "GOY Trophy"
         },
@@ -48,6 +60,7 @@ const GOY_FIXTURES = {
             keywords: ["may medal"],
             dates: ["2026-05-02", "2026-05-03"],
             isGOY: true,
+            isEclectic: true,
             isCaptains: false,
             category: "Medal"
         },
@@ -56,6 +69,7 @@ const GOY_FIXTURES = {
             keywords: ["mccrea"],
             dates: ["2026-05-09", "2026-05-10"],
             isGOY: true,
+            isEclectic: true,
             isCaptains: false,
             category: "GOY Trophy"
         },
@@ -64,6 +78,7 @@ const GOY_FIXTURES = {
             keywords: ["lady captain", "hilary flynn"],
             dates: ["2026-05-23", "2026-05-24"],
             isGOY: true,
+            isEclectic: true,
             isCaptains: false,
             category: "GOY Trophy"
         },
@@ -72,6 +87,7 @@ const GOY_FIXTURES = {
             keywords: ["president's prize to men", "presidents prize to men"],
             dates: ["2026-05-30"],
             isGOY: true,
+            isEclectic: true,
             isCaptains: false,
             category: "President's Prize"
         },
@@ -80,6 +96,7 @@ const GOY_FIXTURES = {
             keywords: ["june medal"],
             dates: ["2026-06-06", "2026-06-07"],
             isGOY: true,
+            isEclectic: true,
             isCaptains: false,
             category: "Medal"
         },
@@ -88,6 +105,7 @@ const GOY_FIXTURES = {
             keywords: ["wh scott", "w.h. scott", "w h scott"],
             dates: ["2026-06-13", "2026-06-14"],
             isGOY: true,
+            isEclectic: true,
             isCaptains: false,
             category: "GOY Trophy"
         },
@@ -96,6 +114,7 @@ const GOY_FIXTURES = {
             keywords: ["lady president"],
             dates: ["2026-06-27", "2026-06-28"],
             isGOY: true,
+            isEclectic: true,
             isCaptains: false,
             category: "GOY Trophy"
         },
@@ -104,6 +123,7 @@ const GOY_FIXTURES = {
             keywords: ["july medal"],
             dates: ["2026-07-11", "2026-07-12"],
             isGOY: true,
+            isEclectic: true,
             isCaptains: false,
             category: "Medal"
         },
@@ -112,6 +132,7 @@ const GOY_FIXTURES = {
             keywords: ["captains prize", "captain's prize", "gary kennedy"],
             dates: ["2026-07-18", "2026-07-19", "2026-07-25"],
             isGOY: true,
+            isEclectic: true,
             isCaptains: true,
             category: "Captain's Prize"
         },
@@ -120,6 +141,7 @@ const GOY_FIXTURES = {
             keywords: ["august medal"],
             dates: ["2026-08-08", "2026-08-09"],
             isGOY: true,
+            isEclectic: true,
             isCaptains: false,
             category: "Medal"
         },
@@ -128,6 +150,7 @@ const GOY_FIXTURES = {
             keywords: ["professional", "pga tankard"],
             dates: ["2026-08-15", "2026-08-16"],
             isGOY: true,
+            isEclectic: true,
             isCaptains: false,
             category: "GOY Trophy"
         },
@@ -136,6 +159,7 @@ const GOY_FIXTURES = {
             keywords: ["september medal"],
             dates: ["2026-09-05", "2026-09-06"],
             isGOY: true,
+            isEclectic: true,
             isCaptains: false,
             category: "Medal"
         },
@@ -144,6 +168,7 @@ const GOY_FIXTURES = {
             keywords: ["cooney"],
             dates: ["2026-09-12", "2026-09-13"],
             isGOY: true,
+            isEclectic: true,
             isCaptains: false,
             category: "GOY Trophy"
         },
@@ -152,6 +177,7 @@ const GOY_FIXTURES = {
             keywords: ["october medal"],
             dates: ["2026-09-26", "2026-09-27"],
             isGOY: true,
+            isEclectic: true,
             isCaptains: false,
             category: "Medal"
         }
@@ -202,9 +228,12 @@ function matchCompetitionToFixture(compName, compDateStr) {
         }
 
         if (keywordMatch || (dateMatch && hasGOYMarker)) {
-            // Honour the fixture's explicit isGOY flag (defaults to true for back-compat)
+            // Honour the fixture's explicit isGOY / isEclectic flags
+            // (default isGOY=true for back-compat; default isEclectic mirrors isGOY)
             const goy = (fixture.isGOY === false) ? false : true;
-            return { isGOY: goy, isCaptains: fixture.isCaptains, fixture: fixture };
+            const ecl = (fixture.isEclectic === false) ? false :
+                        (fixture.isEclectic === true) ? true : goy;
+            return { isGOY: goy, isEclectic: ecl, isCaptains: fixture.isCaptains, fixture: fixture };
         }
     }
 
@@ -213,14 +242,14 @@ function matchCompetitionToFixture(compName, compDateStr) {
         const nonGoyMedalMonths = ['november', 'december', 'january', 'february'];
         const isExcluded = nonGoyMedalMonths.some(m => nameLower.includes(m));
         if (!isExcluded) {
-            return { isGOY: true, isCaptains: false, fixture: null };
+            return { isGOY: true, isEclectic: true, isCaptains: false, fixture: null };
         }
     }
 
     // Strategy 4: If the CSV name contains "(GOY)" but didn't match a fixture,
     // still mark as GOY (future-proofing for mid-year additions)
     if (hasGOYMarker) {
-        return { isGOY: true, isCaptains: false, fixture: null };
+        return { isGOY: true, isEclectic: true, isCaptains: false, fixture: null };
     }
 
     return null;
@@ -261,14 +290,17 @@ function getFixtureCalendar(loadedCompetitions) {
         const isPast = lastDate < today;
         const isCurrent = firstDate <= today && lastDate >= today;
 
-        // Check if this fixture has been uploaded
-        let uploaded = false;
+        // Check if this fixture has been uploaded (computed independently for GOY vs Eclectic)
+        let uploadedForGOY = false;
+        let uploadedForEclectic = false;
         if (loadedCompetitions) {
-            uploaded = loadedCompetitions.some(comp => {
-                if (!comp.config.isGOY) return false;
+            const matchedComps = loadedCompetitions.filter(comp => {
                 const nameLower = (comp.info.name || '').toLowerCase();
                 return fixture.keywords.some(kw => nameLower.includes(kw));
             });
+            uploadedForGOY = matchedComps.some(c => c.config.isGOY);
+            // Eclectic considers undefined as "include" for back-compat with older sessions
+            uploadedForEclectic = matchedComps.some(c => c.config.isEclectic !== false);
         }
 
         return {
@@ -276,7 +308,9 @@ function getFixtureCalendar(loadedCompetitions) {
             isPast,
             isCurrent,
             isUpcoming: !isPast && !isCurrent,
-            uploaded
+            uploaded: uploadedForGOY, // back-compat alias used by the existing GOY tracker
+            uploadedForGOY,
+            uploadedForEclectic
         };
     });
 }

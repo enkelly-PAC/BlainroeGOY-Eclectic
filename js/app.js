@@ -475,7 +475,17 @@ function calculateGOY() {
 // ============ ECLECTIC ENGINE ============
 
 function calculateEclecticFromScorecards() {
-    const compsWithCards = appState.competitions.filter(c => c.hasScorecard);
+    // Eclectic eligibility: must have a scorecard AND be on/after the
+    // configured Eclectic start date (see fixtures.js -> eclecticStartDate).
+    // This guards against pre-season rounds (e.g. winter Stableford off
+    // yellow tees) being accidentally included via stray scorecards.
+    const startKey = (typeof GOY_FIXTURES !== 'undefined' && GOY_FIXTURES.eclecticStartDate) || null;
+    const compsWithCards = appState.competitions.filter(c => {
+        if (!c.hasScorecard) return false;
+        if (!startKey) return true;
+        const dk = extractDateKey(c.info.date);
+        return dk ? dk >= startKey : true;
+    });
     if (compsWithCards.length === 0) return null;
 
     // Collect latest handicap per player (from most recent competition)

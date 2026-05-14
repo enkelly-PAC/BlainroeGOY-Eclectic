@@ -9,6 +9,11 @@
 const GOY_FIXTURES = {
     year: 2026,
 
+    // Captain's Eclectic Cup official start date (ISO, inclusive).
+    // Competitions dated BEFORE this are excluded from Eclectic calculations
+    // even if their scorecards happen to be uploaded.
+    eclecticStartDate: "2026-04-04",
+
     // All GOY-qualifying competitions for the year.
     // Each entry: { name, keywords, dates (ISO), isCaptains, category }
     // 'keywords' are lowercase fragments matched against CSV competition names.

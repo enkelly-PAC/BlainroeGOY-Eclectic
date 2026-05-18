@@ -625,7 +625,10 @@ function renderGOYTable(results) {
     const compIds = competitions.map(c => c.id);
 
     // Get all fixture competitions for full-width table
-    const allFixtures = (typeof GOY_FIXTURES !== 'undefined') ? GOY_FIXTURES.competitions : [];
+    // Only render GOY-flagged fixtures as columns. Non-GOY fixtures (e.g.,
+    // Singles Stableford, Scratch Cups) still upload and count for Eclectic
+    // but don't appear in the GOY leaderboard table.
+    const allFixtures = (typeof GOY_FIXTURES !== 'undefined') ? GOY_FIXTURES.competitions.filter(f => f.isGOY) : [];
     const year = (typeof GOY_FIXTURES !== 'undefined') ? GOY_FIXTURES.year : new Date().getFullYear();
 
     // Map fixture to loaded competition (if uploaded)

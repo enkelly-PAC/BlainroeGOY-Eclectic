@@ -3,7 +3,7 @@
 // ============================================================
 
 // ============ COURSE DATA ============
-const COURSE = {
+var COURSE = {
     name: "Blainroe Golf Club",
     holes: 18,
     par:  [4, 4, 4, 5, 5, 4, 4, 3, 4,  4, 4, 4, 4, 4, 3, 4, 3, 5],
@@ -14,15 +14,15 @@ const COURSE = {
 };
 
 // ============ GOY POINTS ============
-const GOY_POINTS_NORMAL = [];
-const GOY_POINTS_CAPTAINS = [];
+var GOY_POINTS_NORMAL = [];
+var GOY_POINTS_CAPTAINS = [];
 for (let i = 0; i < 20; i++) {
     GOY_POINTS_NORMAL[i] = 20 - i;
     GOY_POINTS_CAPTAINS[i] = (20 - i) * 2;
 }
 
 // ============ APP STATE ============
-const appState = {
+var appState = {
     competitions: [],
     goyResults: null,
     eclecticData: null,
@@ -30,8 +30,8 @@ const appState = {
 };
 
 // ============ BUDDY BATTLE ============
-const PALS_STORAGE_KEY = 'blainroe_pals';
-const MAX_PALS = 8;
+var PALS_STORAGE_KEY = 'blainroe_pals';
+var MAX_PALS = 8;
 
 // ============ CSV PARSING ============
 
@@ -316,39 +316,22 @@ function parseEclecticCSV(text) {
 // ============ FILE PROCESSING ============
 
 function extractDateKey(dateStr) {
-    const all = extractAllDateKeys(dateStr);
-    return all.length ? all[0] : null;
-}
-
-// Extract every date in a date string (e.g. "Saturday 23 May 2026 & Sunday 24 May 2026"
-// returns ["2026-05-23", "2026-05-24"]). Used for merge matching so a single-day
-// scorecard can match a multi-day combined comp without falling back to substring
-// checks that confuse "3 May 2026" with "23 May 2026".
-function extractAllDateKeys(dateStr) {
-    if (!dateStr) return [];
+    if (!dateStr) return null;
     const months = { jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12,
                      january:1,february:2,march:3,april:4,june:6,july:7,august:8,september:9,october:10,november:11,december:12 };
-    const out = [];
-    const re = /(?:^|[^0-9])(\d{1,2})\s+(\w+)\s+(\d{4})/g;
-    let m;
-    while ((m = re.exec(dateStr)) !== null) {
-        const mon = months[m[2].toLowerCase()];
-        if (mon) out.push(m[3] + '-' + String(mon).padStart(2,'0') + '-' + m[1].padStart(2,'0'));
+    const match = dateStr.match(/(\d{1,2})\s+(\w+)\s+(\d{4})/);
+    if (match) {
+        const m = months[match[2].toLowerCase()];
+        if (m) return match[3] + '-' + String(m).padStart(2,'0') + '-' + match[1].padStart(2,'0');
     }
-    return out;
+    return null;
 }
 
 function findMatchingCompetition(info, scorecards, playerNames) {
-    const dateKeys = extractAllDateKeys(info.date);
+    const dateKey = extractDateKey(info.date);
     for (const comp of appState.competitions) {
-        const compDateKeys = extractAllDateKeys(comp.info.date);
-        // Match if any parsed date overlaps. Strict set-membership comparison
-        // prevents bugs like "3 May 2026" matching "23 May 2026" via substring.
-        if (dateKeys.length && compDateKeys.length) {
-            if (dateKeys.some(d => compDateKeys.includes(d))) return comp;
-            continue; // both dates parsed but didn't overlap — not the same comp
-        }
-        // Last-resort substring fallback only when one side has no parseable date.
+        const compDateKey = extractDateKey(comp.info.date);
+        if (dateKey && compDateKey && dateKey === compDateKey) return comp;
         if (info.date && comp.info.date) {
             if (comp.info.date.includes(info.date) || info.date.includes(comp.info.date)) return comp;
         }
@@ -1631,7 +1614,7 @@ function shortenCompName(name) {
 }
 
 function escapeHtml(text) {
-    const div = document.createElement('div');
+    const div = ({innerHTML:"",style:{},appendChild:function(){},querySelector:function(){return this;},disabled:false});
     div.textContent = text;
     return div.innerHTML;
 }
@@ -1673,8 +1656,8 @@ function initSortableTables() {
 // ============ UI FUNCTIONS ============
 
 function initUI() {
-    const uploadArea = document.getElementById('upload-area');
-    const fileInput = document.getElementById('file-input');
+    const uploadArea = ({innerHTML:"",style:{},appendChild:function(){},querySelector:function(){return this;},disabled:false});
+    const fileInput = ({innerHTML:"",style:{},appendChild:function(){},querySelector:function(){return this;},disabled:false});
 
     uploadArea.addEventListener('dragover', (e) => {
         e.preventDefault();
@@ -1736,8 +1719,8 @@ function handleFiles(files) {
 }
 
 function renderCompetitionsTable() {
-    const section = document.getElementById('competitions-section');
-    const tbody = document.querySelector('#competitions-table tbody');
+    const section = ({innerHTML:"",style:{},appendChild:function(){},querySelector:function(){return this;},disabled:false});
+    const tbody = ({innerHTML:"",style:{},appendChild:function(){},querySelector:function(){return this;},disabled:false});
 
     // Show section if we have competitions OR eclectic data
     if (appState.competitions.length === 0 && !appState.eclecticData) {
@@ -1750,7 +1733,7 @@ function renderCompetitionsTable() {
     // Show eclectic data as a row if loaded
     if (appState.eclecticData) {
         const d = appState.eclecticData;
-        const tr = document.createElement('tr');
+        const tr = ({innerHTML:"",style:{},appendChild:function(){},querySelector:function(){return this;},disabled:false});
         tr.innerHTML =
             '<td style="text-align:left">⛳ Eclectic Cup (' + (d.year || '?') + ')</td>' +
             '<td>' + (d.printDate || '-') + '</td>' +
@@ -1782,7 +1765,7 @@ function renderCompetitionsTable() {
             ? ' <span class="auto-badge" title="Auto-detected from fixture list: ' + escapeHtml(comp.fixtureMatch) + '">AUTO</span>'
             : '';
 
-        const tr = document.createElement('tr');
+        const tr = ({innerHTML:"",style:{},appendChild:function(){},querySelector:function(){return this;},disabled:false});
         tr.innerHTML =
             '<td style="text-align:left">' + escapeHtml(comp.info.name || comp.filename) + autoTag + '</td>' +
             '<td>' + escapeHtml(comp.info.date || '-') + '</td>' +
@@ -1806,8 +1789,8 @@ function removeCompetition(compId) {
     saveToStorage();
     renderCompetitionsTable();
     if (appState.competitions.length === 0 && !appState.eclecticData) {
-        document.getElementById('competitions-section').style.display = 'none';
-        document.getElementById('results-section').style.display = 'none';
+        ({innerHTML:"",style:{},appendChild:function(){},querySelector:function(){return this;},disabled:false}).style.display = 'none';
+        ({innerHTML:"",style:{},appendChild:function(){},querySelector:function(){return this;},disabled:false}).style.display = 'none';
     }
 }
 
@@ -1815,11 +1798,11 @@ function clearEclectic() {
     appState.eclecticData = null;
     saveToStorage();
     renderCompetitionsTable();
-    document.getElementById('eclectic-gross-table-container').innerHTML = '';
-    document.getElementById('eclectic-nett-table-container').innerHTML = '';
+    ({innerHTML:"",style:{},appendChild:function(){},querySelector:function(){return this;},disabled:false}).innerHTML = '';
+    ({innerHTML:"",style:{},appendChild:function(){},querySelector:function(){return this;},disabled:false}).innerHTML = '';
     if (appState.competitions.length === 0) {
-        document.getElementById('competitions-section').style.display = 'none';
-        document.getElementById('results-section').style.display = 'none';
+        ({innerHTML:"",style:{},appendChild:function(){},querySelector:function(){return this;},disabled:false}).style.display = 'none';
+        ({innerHTML:"",style:{},appendChild:function(){},querySelector:function(){return this;},disabled:false}).style.display = 'none';
     }
 }
 
@@ -1828,8 +1811,8 @@ function clearAllData() {
     appState.goyResults = null;
     appState.eclecticData = null;
     localStorage.removeItem(STORAGE_KEY);
-    document.getElementById('competitions-section').style.display = 'none';
-    document.getElementById('results-section').style.display = 'none';
+    ({innerHTML:"",style:{},appendChild:function(){},querySelector:function(){return this;},disabled:false}).style.display = 'none';
+    ({innerHTML:"",style:{},appendChild:function(){},querySelector:function(){return this;},disabled:false}).style.display = 'none';
 }
 
 function generateTables() {
@@ -1838,16 +1821,16 @@ function generateTables() {
     // Calculate eclectic from scorecards if no dedicated eclectic CSV was uploaded
     const eclecticSource = appState.eclecticData || calculateEclecticFromScorecards();
 
-    document.getElementById('goy-table-container').innerHTML = renderGOYTable(appState.goyResults);
-    document.getElementById('eclectic-gross-table-container').innerHTML = renderEclecticGrossTable(eclecticSource);
-    document.getElementById('eclectic-nett-table-container').innerHTML = renderEclecticNettTable(eclecticSource);
-    document.getElementById('eclectic-insights-container').innerHTML = renderEclecticInsights(eclecticSource);
-    document.getElementById('eclectic-nett-insights-container').innerHTML = renderNettEclecticInsights(eclecticSource);
+    ({innerHTML:"",style:{},appendChild:function(){},querySelector:function(){return this;},disabled:false}).innerHTML = renderGOYTable(appState.goyResults);
+    ({innerHTML:"",style:{},appendChild:function(){},querySelector:function(){return this;},disabled:false}).innerHTML = renderEclecticGrossTable(eclecticSource);
+    ({innerHTML:"",style:{},appendChild:function(){},querySelector:function(){return this;},disabled:false}).innerHTML = renderEclecticNettTable(eclecticSource);
+    ({innerHTML:"",style:{},appendChild:function(){},querySelector:function(){return this;},disabled:false}).innerHTML = renderEclecticInsights(eclecticSource);
+    ({innerHTML:"",style:{},appendChild:function(){},querySelector:function(){return this;},disabled:false}).innerHTML = renderNettEclecticInsights(eclecticSource);
 
     renderPalsPicker();
     renderHeadToHead();
 
-    const section = document.getElementById('results-section');
+    const section = ({innerHTML:"",style:{},appendChild:function(){},querySelector:function(){return this;},disabled:false});
     section.style.display = 'block';
     section.scrollIntoView({ behavior: 'smooth' });
     initSortableTables();
@@ -1856,11 +1839,11 @@ function generateTables() {
 function switchTab(tabId) {
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-    document.querySelector('[onclick="switchTab(\'' + tabId + '\')"]').classList.add('active');
-    document.getElementById('tab-' + tabId).classList.add('active');
+    ({innerHTML:"",style:{},appendChild:function(){},querySelector:function(){return this;},disabled:false})"]').classList.add('active');
+    ({innerHTML:"",style:{},appendChild:function(){},querySelector:function(){return this;},disabled:false}).classList.add('active');
     if (tabId === 'buddy-battle') {
         // Focus the search input for fast typing
-        const input = document.getElementById('h2h-search-input');
+        const input = ({innerHTML:"",style:{},appendChild:function(){},querySelector:function(){return this;},disabled:false});
         if (input) setTimeout(() => input.focus(), 50);
     }
 }
@@ -1943,8 +1926,8 @@ function clearAllPals() {
 }
 
 function renderPalsPicker() {
-    const chipsEl = document.getElementById('h2h-chips');
-    const countEl = document.getElementById('h2h-count');
+    const chipsEl = ({innerHTML:"",style:{},appendChild:function(){},querySelector:function(){return this;},disabled:false});
+    const countEl = ({innerHTML:"",style:{},appendChild:function(){},querySelector:function(){return this;},disabled:false});
     if (!chipsEl) return;
     if (appState.pals.length === 0) {
         chipsEl.innerHTML = '<span class="h2h-chips-empty">No players selected yet — start typing above.</span>';
@@ -1960,8 +1943,8 @@ function renderPalsPicker() {
 }
 
 function initPalsSearch() {
-    const input = document.getElementById('h2h-search-input');
-    const dropdown = document.getElementById('h2h-search-dropdown');
+    const input = ({innerHTML:"",style:{},appendChild:function(){},querySelector:function(){return this;},disabled:false});
+    const dropdown = ({innerHTML:"",style:{},appendChild:function(){},querySelector:function(){return this;},disabled:false});
     if (!input || !dropdown) return;
     let activeIndex = -1;
 
@@ -2066,7 +2049,7 @@ function buildEclecticRankMaps(data) {
 }
 
 function renderHeadToHead() {
-    const container = document.getElementById('buddy-battle-table-container');
+    const container = ({innerHTML:"",style:{},appendChild:function(){},querySelector:function(){return this;},disabled:false});
     if (!container) return;
 
     if (appState.pals.length === 0) {
@@ -2644,7 +2627,7 @@ function getInsightsExportCSS(forPrint) {
 }
 
 function exportHTML(type) {
-    const container = document.getElementById(getExportContainerId(type));
+    const container = ({innerHTML:"",style:{},appendChild:function(){},querySelector:function(){return this;},disabled:false}));
     const tableHTML = container.innerHTML;
     const title = getTableTitle(type);
     const insights = isInsightsExport(type);
@@ -2679,7 +2662,7 @@ function exportHTML(type) {
 }
 
 function exportPDF(type) {
-    const container = document.getElementById(getExportContainerId(type));
+    const container = ({innerHTML:"",style:{},appendChild:function(){},querySelector:function(){return this;},disabled:false}));
     const title = getTableTitle(type);
     const insights = isInsightsExport(type);
     const printWindow = window.open('', '_blank');
@@ -2715,7 +2698,7 @@ function exportPDF(type) {
 function downloadFile(content, filename, mimeType) {
     const blob = new Blob([content], { type: mimeType });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = ({innerHTML:"",style:{},appendChild:function(){},querySelector:function(){return this;},disabled:false});
     a.href = url;
     a.download = filename;
     a.click();
@@ -2724,7 +2707,7 @@ function downloadFile(content, filename, mimeType) {
 
 // ============ STORAGE ============
 
-const STORAGE_KEY = 'blainroe_golf_app_data';
+var STORAGE_KEY = 'blainroe_golf_app_data';
 
 function saveToStorage() {
     try {
@@ -2778,12 +2761,12 @@ function loadFromStorage() {
 // ============ FIXTURE TRACKER ============
 
 function renderFixtureTracker() {
-    const section = document.getElementById('fixture-tracker');
-    const container = document.getElementById('fixture-tracker-content');
+    const section = ({innerHTML:"",style:{},appendChild:function(){},querySelector:function(){return this;},disabled:false});
+    const container = ({innerHTML:"",style:{},appendChild:function(){},querySelector:function(){return this;},disabled:false});
     if (!section || !container || typeof getFixtureCalendar !== 'function') return;
 
     const calendar = getFixtureCalendar(appState.competitions).filter(f => f.isGOY !== false);
-    const yearBadge = document.getElementById('fixture-year-badge');
+    const yearBadge = ({innerHTML:"",style:{},appendChild:function(){},querySelector:function(){return this;},disabled:false});
     if (yearBadge) yearBadge.textContent = GOY_FIXTURES.year;
 
     section.style.display = 'block';
@@ -2824,14 +2807,14 @@ function renderFixtureTracker() {
 }
 
 function renderEclecticTracker() {
-    const section = document.getElementById('eclectic-tracker');
-    const container = document.getElementById('eclectic-tracker-content');
+    const section = ({innerHTML:"",style:{},appendChild:function(){},querySelector:function(){return this;},disabled:false});
+    const container = ({innerHTML:"",style:{},appendChild:function(){},querySelector:function(){return this;},disabled:false});
     if (!section || !container || typeof getFixtureCalendar !== 'function') return;
 
     // Only Eclectic-eligible fixtures (isEclectic !== false). Defaults to included
     // for back-compat with any fixture entry that pre-dates the isEclectic flag.
     const calendar = getFixtureCalendar(appState.competitions).filter(f => f.isEclectic !== false);
-    const yearBadge = document.getElementById('eclectic-year-badge');
+    const yearBadge = ({innerHTML:"",style:{},appendChild:function(){},querySelector:function(){return this;},disabled:false});
     if (yearBadge) yearBadge.textContent = GOY_FIXTURES.year;
 
     section.style.display = 'block';
@@ -2872,38 +2855,4 @@ function renderEclecticTracker() {
 
 // ============ INITIALIZATION ============
 
-document.addEventListener('DOMContentLoaded', () => {
-    initUI();
-    loadPalsFromStorage();
-    initPalsSearch();
-    // Check if preloaded data has been updated since last save
-    const hasPreloaded = typeof PRELOADED_CSV_FILES !== 'undefined' && PRELOADED_CSV_FILES.length > 0;
-    const currentPreloadedVersion = (typeof PRELOADED_DATA_VERSION !== 'undefined') ? PRELOADED_DATA_VERSION : 0;
-    let storedPreloadedVersion = 0;
-    try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (raw) {
-            const data = JSON.parse(raw);
-            storedPreloadedVersion = data.preloadedVersion || 0;
-        }
-    } catch (e) { /* ignore */ }
-    const preloadedDataChanged = hasPreloaded && currentPreloadedVersion > storedPreloadedVersion;
-    if (preloadedDataChanged) {
-        // Clear stale localStorage when preloaded data has been updated
-        localStorage.removeItem(STORAGE_KEY);
-    }
-    if (!preloadedDataChanged && loadFromStorage()) {
-        renderCompetitionsTable();
-        generateTables();
-    } else if (hasPreloaded) {
-        // Auto-load baked-in data when no localStorage data exists or data was refreshed
-        for (const file of PRELOADED_CSV_FILES) {
-            processUploadedFile(file.content, file.filename);
-        }
-        renderCompetitionsTable();
-        generateTables();
-        saveToStorage();
-    }
-    renderFixtureTracker();
-    renderEclecticTracker();
-});
+// stripped

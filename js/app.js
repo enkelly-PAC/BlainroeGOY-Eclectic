@@ -112,6 +112,15 @@ function extractCompetitionInfo(lines) {
             const dateMatch = name.match(/(\d{1,2}(?:st|nd|rd|th)?\s*[\/&]\s*\d{1,2}(?:st|nd|rd|th)?\s+\w+\s+\d{4})/i);
             if (dateMatch) date = dateMatch[1];
         }
+        // Scorecard CSVs put a generic "Competition Scorecards" on line 2 and the rich
+        // comp name embedded in line 4, e.g. "Hole by Hole scores returned in the
+        // [COMP NAME] competition round played on [DATE] at [VENUE]". When the line-2
+        // name is the generic placeholder, prefer the richer name so fixture matching
+        // and merge logic have something useful to work with.
+        if ((!name || name === 'Competition Scorecards') && /Hole by Hole/i.test(text)) {
+            const richMatch = text.match(/Hole by Hole scores returned in the\s+(.+?)\s+competition round/i);
+            if (richMatch) name = richMatch[1].trim();
+        }
         if (text.includes('played on')) {
             const playedMatch = text.match(/played on\s+(.+?)\s+at\s+(.+)/i);
             if (playedMatch) { date = playedMatch[1].trim(); venue = playedMatch[2].trim(); }
@@ -1736,7 +1745,15 @@ function renderCompetitionsTable() {
         tbody.appendChild(tr);
     }
 
-    for (const comp of appState.competitions) {
+    for (const comp of [...appState.competitions].sort((a, b) => {
+        // Sort by date descending (most recent first); fall back to name when no date.
+        const da = extractDateKey(a.info.date) || '';
+        const db = extractDateKey(b.info.date) || '';
+        if (da && db) return db.localeCompare(da);
+        if (da) return -1;
+        if (db) return 1;
+        return (a.info.name || '').localeCompare(b.info.name || '');
+    })) {
         const playerCount = comp.hasScorecard
             ? Object.keys(comp.scorecards).length
             : comp.results.length;

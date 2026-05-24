@@ -92,14 +92,6 @@ const GOY_FIXTURES = {
             category: "GOY Trophy"
         },
         {
-            name: "Mens Scratch Cups & Singles Stableford",
-            keywords: ["scratch cup", "scratch cups"],
-            dates: ["2026-05-16", "2026-05-17"],
-            isGOY: false,
-            isCaptains: false,
-            category: "Scratch Cups"
-        },
-        {
             name: "President's Prize to Men",
             keywords: ["president's prize to men", "presidents prize to men"],
             dates: ["2026-05-30"],

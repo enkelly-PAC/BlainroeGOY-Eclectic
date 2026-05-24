@@ -12,3 +12,6 @@ check-goy-fixtures.js
 _gen-preloaded.js
 _verify.js
 _audit.js
+_trace.js
+_trace2.js
+_trace-app-stripped.js

@@ -9,3 +9,5 @@ _peek.js
 find-albatross2.js
 albatross-smoketest.js
 check-goy-fixtures.js
+_gen-preloaded.js
+_verify.js

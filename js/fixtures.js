@@ -84,12 +84,20 @@ const GOY_FIXTURES = {
         },
         {
             name: "Lady Captain's Prize to Men (GOY)",
-            keywords: ["lady captain", "hilary flynn"],
+            keywords: ["lady captain", "lady capt", "hilary flynn"],
             dates: ["2026-05-23", "2026-05-24"],
             isGOY: true,
             isEclectic: true,
             isCaptains: false,
             category: "GOY Trophy"
+        },
+        {
+            name: "Mens Scratch Cups & Singles Stableford",
+            keywords: ["scratch cup", "scratch cups"],
+            dates: ["2026-05-16", "2026-05-17"],
+            isGOY: false,
+            isCaptains: false,
+            category: "Scratch Cups"
         },
         {
             name: "President's Prize to Men",

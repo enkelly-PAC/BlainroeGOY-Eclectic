@@ -11,3 +11,4 @@ albatross-smoketest.js
 check-goy-fixtures.js
 _gen-preloaded.js
 _verify.js
+_audit.js

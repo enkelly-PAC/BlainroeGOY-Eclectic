@@ -30,7 +30,7 @@ const GOY_FIXTURES = {
         },
         {
             name: "Men's Singles Stableford (April)",
-            keywords: ["singles stableford"],
+            keywords: ["singles stableford - 11", "singles stableford - 12"],
             dates: ["2026-04-11", "2026-04-12"],
             isGOY: false,
             isEclectic: true,
@@ -221,6 +221,9 @@ function matchCompetitionToFixture(compName, compDateStr) {
             }
             // Also try matching partial date strings
             if (!dateMatch) {
+                // Extract ALL number tokens from the date string and compare as integers.
+                // This avoids the old substring bug where day=2 matched "24" or "2026".
+                const dayTokens = (compDateStr.match(/\d+/g) || []).map(t => parseInt(t, 10));
                 for (const fd of fixture.dates) {
                     const fDate = new Date(fd);
                     const dayNum = fDate.getDate();
@@ -228,7 +231,7 @@ function matchCompetitionToFixture(compName, compDateStr) {
                                         'july','august','september','october','november','december'];
                     const monthName = monthNames[fDate.getMonth()];
                     if (compDateStr.toLowerCase().includes(monthName) &&
-                        compDateStr.includes(String(dayNum))) {
+                        dayTokens.includes(dayNum)) {
                         dateMatch = true;
                         break;
                     }

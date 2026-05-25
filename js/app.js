@@ -1142,7 +1142,7 @@ function renderEclecticInsights(data) {
     html += '<table class="insight-table"><thead><tr><th>Player</th><th>Birdies</th><th>Eagles</th></tr></thead><tbody>';
     for (const p of mostBirdies) {
         html += '<tr><td>' + escapeHtml(displayName(p.name)) + '</td>';
-        html += '<td><strong>' + p.birdies + '</strong></td>';
+        html += '<td><strong>🔴 ' + p.birdies + '</strong></td>';
         html += '<td>' + (p.eagles > 0 ? '🟡 ' + p.eagles : '-') + '</td></tr>';
     }
     html += '</tbody></table></div>';
@@ -1154,7 +1154,7 @@ function renderEclecticInsights(data) {
     for (const p of mostPars) {
         const pct = p.filledHoles > 0 ? (p.pars / p.filledHoles * 100).toFixed(0) : 0;
         html += '<tr><td>' + escapeHtml(displayName(p.name)) + '</td>';
-        html += '<td><strong>' + p.pars + '</strong></td>';
+        html += '<td><strong>🟢 ' + p.pars + '</strong></td>';
         html += '<td>' + pct + '%</td></tr>';
     }
     html += '</tbody></table></div>';
@@ -1463,7 +1463,7 @@ function renderNettEclecticInsights(data) {
     html += '<table class="insight-table"><thead><tr><th>Player</th><th>Birdies</th><th>Eagles</th></tr></thead><tbody>';
     for (const p of mostNettBirdies) {
         html += '<tr><td>' + escapeHtml(displayName(p.name)) + '</td>';
-        html += '<td><strong>' + p.nettBirdies + '</strong></td>';
+        html += '<td><strong>🔴 ' + p.nettBirdies + '</strong></td>';
         html += '<td>' + (p.nettEagles > 0 ? '🟡 ' + p.nettEagles : '-') + '</td></tr>';
     }
     html += '</tbody></table></div>';
@@ -1475,7 +1475,7 @@ function renderNettEclecticInsights(data) {
     for (const p of mostNettPars) {
         const pct = p.filledHoles > 0 ? (p.nettPars / p.filledHoles * 100).toFixed(0) : 0;
         html += '<tr><td>' + escapeHtml(displayName(p.name)) + '</td>';
-        html += '<td><strong>' + p.nettPars + '</strong></td>';
+        html += '<td><strong>🟢 ' + p.nettPars + '</strong></td>';
         html += '<td>' + pct + '%</td></tr>';
     }
     html += '</tbody></table></div>';

@@ -102,7 +102,7 @@ const GOY_FIXTURES = {
         },
         {
             name: "Men's Singles Stableford (May)",
-            keywords: ["singles stableford"],
+            keywords: ["singles stableford - 31 may"],
             dates: ["2026-05-31"],
             isGOY: false,
             isEclectic: true,
@@ -248,7 +248,7 @@ function matchCompetitionToFixture(compName, compDateStr) {
             }
         }
 
-        if (keywordMatch || (dateMatch && hasGOYMarker)) {
+        if (keywordMatch || dateMatch) {
             // Honour the fixture's explicit isGOY / isEclectic flags
             // (default isGOY=true for back-compat; default isEclectic mirrors isGOY)
             const goy = (fixture.isGOY === false) ? false : true;

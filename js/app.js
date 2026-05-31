@@ -1800,9 +1800,6 @@ function renderCompetitionsTable() {
         const playerCount = comp.hasScorecard
             ? Object.keys(comp.scorecards).length
             : comp.results.length;
-        const typeLabel = [];
-        if (comp.hasReport) typeLabel.push('Report');
-        if (comp.hasScorecard) typeLabel.push('Scorecards');
         // Show auto-detect badge
         const autoTag = comp.fixtureMatch
             ? ' <span class="auto-badge" title="Auto-detected from fixture list: ' + escapeHtml(comp.fixtureMatch) + '">AUTO</span>'
@@ -1813,7 +1810,6 @@ function renderCompetitionsTable() {
             '<td style="text-align:left">' + escapeHtml(comp.info.name || comp.filename) + autoTag + '</td>' +
             '<td>' + escapeHtml(comp.info.date || '-') + '</td>' +
             '<td>' + playerCount + '</td>' +
-            '<td>' + typeLabel.join(' + ') + '</td>' +
             '<td><input type="checkbox" ' + (comp.config.isGOY ? 'checked' : '') + ' ' +
                 (!comp.hasReport ? 'disabled title="Needs Competition Report CSV"' : '') +
                 ' onchange="toggleConfig(\'' + comp.id + '\',\'isGOY\',this.checked)"></td>' +

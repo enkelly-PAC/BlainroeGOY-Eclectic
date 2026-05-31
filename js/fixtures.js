@@ -93,7 +93,7 @@ const GOY_FIXTURES = {
         },
         {
             name: "President's Prize to Men",
-            keywords: ["president's prize to men", "presidents prize to men"],
+            keywords: ["president's prize to men", "presidents prize to men", "men's presidents prize", "men's president's prize"],
             dates: ["2026-05-30"],
             isGOY: true,
             isEclectic: true,

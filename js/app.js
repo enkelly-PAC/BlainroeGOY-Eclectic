@@ -201,6 +201,28 @@ function parseCompetitionReportCSV(text) {
                 scoreText = val.trim();
                 break;
             }
+            // V PAR format: "7 up (09)", "Tied (13)", "1 down (07)"
+            const vparUpMatch = val.match(/(\d+)\s*up\s*\((\d+)\)/i);
+            if (vparUpMatch) {
+                score = parseInt(vparUpMatch[1], 10);
+                playingHandicap = parseInt(vparUpMatch[2], 10);
+                scoreText = val.trim();
+                break;
+            }
+            const vparTiedMatch = val.match(/Tied\s*\((\d+)\)/i);
+            if (vparTiedMatch) {
+                score = 0;
+                playingHandicap = parseInt(vparTiedMatch[1], 10);
+                scoreText = val.trim();
+                break;
+            }
+            const vparDownMatch = val.match(/(\d+)\s*down\s*\((\d+)\)/i);
+            if (vparDownMatch) {
+                score = -parseInt(vparDownMatch[1], 10);
+                playingHandicap = parseInt(vparDownMatch[2], 10);
+                scoreText = val.trim();
+                break;
+            }
             // Medal/Strokeplay format: "88 - 19 = 69" (gross - handicap = net)
             const medalMatch = val.match(/(\d+)\s*-\s*(\d+)\s*=\s*(\d+)/);
             if (medalMatch) {

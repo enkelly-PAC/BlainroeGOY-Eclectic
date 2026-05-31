@@ -378,6 +378,10 @@ function findMatchingCompetition(info, scorecards, playerNames) {
     if (scorecards || playerNames) {
         const names = playerNames || new Set(Object.keys(scorecards));
         for (const comp of appState.competitions) {
+            // Skip comps where both have parseable dates that don't overlap
+            // (prevents merging different weeks at the same club via player overlap)
+            const compDateKeys2 = extractAllDateKeys(comp.info.date);
+            if (dateKeys.length && compDateKeys2.length && !dateKeys.some(d => compDateKeys2.includes(d))) continue;
             // Only merge via player overlap if competition names are compatible
             // (prevents merging different weekly competitions at the same club)
             if (info.name && comp.info.name) {

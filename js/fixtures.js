@@ -101,6 +101,15 @@ const GOY_FIXTURES = {
             category: "President's Prize"
         },
         {
+            name: "Men's Singles Stableford (May)",
+            keywords: ["singles stableford"],
+            dates: ["2026-05-31"],
+            isGOY: false,
+            isEclectic: true,
+            isCaptains: false,
+            category: "Singles Stableford"
+        },
+        {
             name: "Men's June Medal",
             keywords: ["june medal"],
             dates: ["2026-06-06", "2026-06-07"],

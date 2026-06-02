@@ -386,8 +386,9 @@ footer {
 }
 
 .goy-date-header {
-    font-size: 0.65rem;
-    color: #ddd;
+    font-size: 0.7rem;
+    color: #fff;
+    font-weight: 600;
 }
 
 .goy-subheader th {

@@ -2704,16 +2704,20 @@ function exportPDF(type) {
     const container = document.getElementById(getExportContainerId(type));
     const title = getTableTitle(type);
     const insights = isInsightsExport(type);
+    const goyPdf = type === 'goy';
+    const exportContent = goyPdf ? getGOYPdfExportContent(container) : container.innerHTML;
     const printWindow = window.open('', '_blank');
     printWindow.document.write('<!DOCTYPE html>\n<html>\n<head>\n<title>' + title + '</title>\n' +
         '<style>\n' +
         '@page { size: landscape; margin: 1cm; margin-top: 0.5cm; margin-bottom: 0.5cm; }\n' +
+        (goyPdf ? '@page { size: A4 landscape; margin: 0.45cm; }\n' : '') +
         'body { font-family: Arial, sans-serif; margin: 1rem; color: #1a2e1a; }\n' +
+        (goyPdf ? 'body { margin: 0; }\n' : '') +
         'h1 { font-size: 1.3rem; color: #1a5e1a; text-align: center; margin-bottom: 0.25rem; }\n' +
         'h2 { font-size: 1rem; color: #333; text-align: center; font-weight: 400; margin-bottom: 1rem; }\n' +
         'table { width: 100%; border-collapse: collapse; font-size: 0.75rem; }\n' +
         'thead { background: #1a5e1a; color: white; -webkit-print-color-adjust: exact; print-color-adjust: exact; }\n' +
-        'th { padding: 6px 5px; text-align: center; font-weight: 800; font-size: 0.85rem; color: white; text-shadow: 0 0 2px rgba(0,0,0,0.3); -webkit-print-color-adjust: exact; print-color-adjust: exact; }\n' +
+        'th { padding: 6px 5px; text-align: center; font-weight: 800; font-size: 0.85rem; color: white; -webkit-print-color-adjust: exact; print-color-adjust: exact; }\n' +
         'td { padding: 3px; text-align: center; border-bottom: 1px solid #ddd; -webkit-print-color-adjust: exact; print-color-adjust: exact; }\n' +
         'td:nth-child(2) { text-align: left; }\n' +
         'tr:nth-child(even) { background: #f5f5f5; -webkit-print-color-adjust: exact; print-color-adjust: exact; }\n' +
@@ -2722,16 +2726,92 @@ function exportPDF(type) {
         '.player-name { text-align: left; font-weight: 600; }\n' +
         '.eclectic-title-bar { text-align: center; font-size: 1.1rem; font-weight: 700; color: #1a5e1a; margin-bottom: 0.75rem; }\n' +
         '.comp-col-header { writing-mode: vertical-lr; text-orientation: mixed; transform: rotate(180deg); font-size: 0.65rem; }\n' +
+        (goyPdf ? getGOYPdfCSS() : '') +
         'footer { text-align: center; margin-top: 1rem; color: #888; font-size: 0.7rem; }\n' +
         (insights ? getInsightsExportCSS(true) + '\n' : '') +
         '</style>\n</head>\n<body>\n' +
         '<h1>\u26f3 Blainroe Golf Club</h1>\n' +
         '<h2>' + title + '</h2>\n' +
-        container.innerHTML + '\n' +
+        exportContent + '\n' +
         '<footer>Generated on ' + new Date().toLocaleDateString('en-IE', { day: 'numeric', month: 'long', year: 'numeric' }) + '</footer>\n' +
         '<script>window.onload = function() { window.print(); }<\/script>\n' +
         '</body>\n</html>');
     printWindow.document.close();
+}
+
+function getGOYPdfCSS() {
+    return [
+        '#goy-table { table-layout: fixed; font-size: 6.6pt; line-height: 1.15; }',
+        '#goy-table th, #goy-table td { padding: 2px 3px; border: 1px solid #d8d8d8; }',
+        '#goy-table thead th { background: #1a5e1a; color: #fff; text-shadow: none; }',
+        '#goy-table th:nth-child(1), #goy-table td:nth-child(1) { width: 24px; }',
+        '#goy-table th:nth-child(2), #goy-table td:nth-child(2) { width: 32px; }',
+        '#goy-table th:nth-child(3), #goy-table td:nth-child(3) { width: 30px; }',
+        '#goy-table th:nth-child(4), #goy-table td:nth-child(4) { width: 112px; text-align: left; }',
+        '#goy-table .comp-col { width: 24px; min-width: 24px; }',
+        '#goy-table .comp-col-header { writing-mode: horizontal-tb; transform: none; max-height: none; font-size: 6.8pt; padding: 2px 1px; line-height: 1; }',
+        '#goy-table .goy-date-header { color: #fff; font-size: 6.2pt; font-weight: 700; }',
+        '#goy-table .player-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }',
+        '.goy-title-bar { font-size: 11pt; text-align: left; color: #1a5e1a; font-weight: 700; margin: 0 0 5px 0; }',
+        '.goy-pdf-legend { margin-top: 8px; page-break-inside: avoid; break-inside: avoid; }',
+        '.goy-pdf-legend h3 { margin: 0 0 4px 0; font-size: 8.5pt; color: #1a5e1a; }',
+        '.goy-pdf-legend table { font-size: 6.8pt; width: 100%; table-layout: fixed; }',
+        '.goy-pdf-legend th { background: #e8f0e8; color: #1a2e1a; padding: 3px; border: 1px solid #d0d8d0; }',
+        '.goy-pdf-legend td { padding: 3px; border: 1px solid #e0e0e0; text-align: left; }',
+        '.goy-pdf-legend td:first-child { text-align: center; font-weight: 700; color: #1a5e1a; width: 28px; }',
+        '.goy-pdf-legend td:nth-child(2) { text-align: center; width: 42px; }'
+    ].join('\n') + '\n';
+}
+
+function getGOYPdfExportContent(container) {
+    const clone = container.cloneNode(true);
+    const table = clone.querySelector('#goy-table');
+    if (!table) return clone.innerHTML;
+
+    const headerRows = table.querySelectorAll('thead tr');
+    if (headerRows.length >= 3) {
+        const eventCells = Array.from(headerRows[0].querySelectorAll('th')).slice(4);
+        const dateCells = Array.from(headerRows[1].querySelectorAll('th')).slice(4);
+        const nameCells = Array.from(headerRows[2].querySelectorAll('th')).slice(4);
+        const events = nameCells.map((cell, index) => ({
+            number: (eventCells[index] ? eventCells[index].textContent : String(index + 1)).trim(),
+            date: (dateCells[index] ? dateCells[index].textContent : '').trim(),
+            name: cell.textContent.trim()
+        }));
+
+        headerRows[0].remove();
+        nameCells.forEach((cell, index) => {
+            const header = cell.querySelector('.comp-col-header');
+            if (header) header.textContent = events[index].number;
+            else cell.textContent = events[index].number;
+            cell.title = events[index].name;
+        });
+
+        const legend = document.createElement('div');
+        legend.className = 'goy-pdf-legend';
+        legend.innerHTML = '<h3>Event key</h3>' + buildGOYPdfLegend(events);
+        clone.appendChild(legend);
+    }
+
+    return clone.innerHTML;
+}
+
+function buildGOYPdfLegend(events) {
+    let html = '<table><thead><tr><th>No.</th><th>Date</th><th>Competition</th><th>No.</th><th>Date</th><th>Competition</th><th>No.</th><th>Date</th><th>Competition</th></tr></thead><tbody>';
+    for (let i = 0; i < events.length; i += 3) {
+        html += '<tr>';
+        for (let j = 0; j < 3; j++) {
+            const event = events[i + j];
+            if (event) {
+                html += '<td>' + escapeHtml(event.number) + '</td><td>' + escapeHtml(event.date) + '</td><td>' + escapeHtml(event.name) + '</td>';
+            } else {
+                html += '<td></td><td></td><td></td>';
+            }
+        }
+        html += '</tr>';
+    }
+    html += '</tbody></table>';
+    return html;
 }
 
 function downloadFile(content, filename, mimeType) {

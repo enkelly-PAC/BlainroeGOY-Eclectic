@@ -317,7 +317,12 @@ function getFixtureCalendar(loadedCompetitions) {
         if (loadedCompetitions) {
             const matchedComps = loadedCompetitions.filter(comp => {
                 const nameLower = (comp.info.name || '').toLowerCase();
-                return fixture.keywords.some(kw => nameLower.includes(kw));
+                const keywordMatch = fixture.keywords.some(kw => nameLower.includes(kw));
+                const storedFixtureMatch = comp.fixtureMatch === fixture.name;
+                const resolvedFixtureMatch = matchCompetitionToFixture(comp.info.name, comp.info.date);
+                return keywordMatch ||
+                    storedFixtureMatch ||
+                    (resolvedFixtureMatch && resolvedFixtureMatch.fixture === fixture);
             });
             uploadedForGOY = matchedComps.some(c => c.config.isGOY);
             // Eclectic considers undefined as "include" for back-compat with older sessions

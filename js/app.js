@@ -181,6 +181,7 @@ function parseCompetitionReportCSV(text) {
     const info = extractCompetitionInfo(lines);
     const results = [];
     const handicaps = {};
+    const handicapAllowance = extractPlayingHandicapAllowance(lines);
     for (let i = 0; i < lines.length; i++) {
         const fields = parseCSVLine(lines[i]);
         const pos = parseInt(fields[0], 10);
@@ -236,10 +237,23 @@ function parseCompetitionReportCSV(text) {
         if (fields[0] === '-') continue;
         if (score === null && scoreText !== 'NR') continue;
         results.push({ position: pos, playerName, score, scoreText, playingHandicap });
-        if (playingHandicap !== null) handicaps[playerName] = playingHandicap;
+        if (playingHandicap !== null) handicaps[playerName] = convertPlayingToCourseHandicap(playingHandicap, handicapAllowance);
     }
     results.sort((a, b) => a.position - b.position);
     return { info, results, handicaps };
+}
+
+function extractPlayingHandicapAllowance(lines) {
+    for (const line of lines) {
+        const match = line.match(/Playing Handicap:\s*(\d+(?:\.\d+)?)%/i);
+        if (match) return parseFloat(match[1]) / 100;
+    }
+    return null;
+}
+
+function convertPlayingToCourseHandicap(playingHandicap, allowance) {
+    if (!allowance || allowance <= 0 || allowance === 1) return playingHandicap;
+    return Math.round(playingHandicap / allowance);
 }
 
 // ============ ECLECTIC CSV PARSING ============
@@ -907,7 +921,7 @@ function renderEclecticNettTable(data) {
         if (h === 9) html += '<th class="total-col">Out</th>';
     }
     html += '<th class="total-col">In</th>';
-    html += '<th class="total-col">Gross</th><th>H\'cap</th><th class="total-col">Net</th></tr>';
+    html += '<th class="total-col">Gross</th><th>Blue H\'cap</th><th class="total-col">Net</th></tr>';
 
     // Par row
     html += '<tr class="par-row"><th></th><th style="text-align:left">Par</th><th></th>';

@@ -720,7 +720,7 @@ function renderGOYTable(results) {
     const leader = leaderboard.length > 0 ? leaderboard[0].playerName : '';
 
     let html = '<div class="goy-title-bar">Golfer of the Year ' + year;
-    if (leader) html += ' — Current Leader: ' + escapeHtml(leader);
+    if (leader) html += ' - Current Leader: ' + escapeHtml(leader);
     html += '</div>';
 
     html += '<table id="goy-table"><thead>';
@@ -2749,7 +2749,9 @@ function getGOYPdfCSS() {
         '#goy-table th:nth-child(3), #goy-table td:nth-child(3) { width: 30px; }',
         '#goy-table th:nth-child(4), #goy-table td:nth-child(4) { width: 112px; text-align: left; }',
         '#goy-table .comp-col { width: 24px; min-width: 24px; }',
-        '#goy-table .comp-col-header { writing-mode: horizontal-tb; transform: none; max-height: none; font-size: 6.8pt; padding: 2px 1px; line-height: 1; }',
+        '#goy-table .comp-col-header { writing-mode: vertical-lr; text-orientation: mixed; transform: rotate(180deg); max-height: 72px; font-size: 5.4pt; padding: 2px 1px; line-height: 1.05; white-space: normal; }',
+        '#goy-table .goy-pdf-event-number { font-weight: 800; font-size: 6pt; }',
+        '#goy-table .goy-pdf-event-name { font-weight: 700; }',
         '#goy-table .goy-date-header { color: #fff; font-size: 6.2pt; font-weight: 700; }',
         '#goy-table .player-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }',
         '.goy-title-bar { font-size: 11pt; text-align: left; color: #1a5e1a; font-weight: 700; margin: 0 0 5px 0; }',
@@ -2782,8 +2784,10 @@ function getGOYPdfExportContent(container) {
         headerRows[0].remove();
         nameCells.forEach((cell, index) => {
             const header = cell.querySelector('.comp-col-header');
-            if (header) header.textContent = events[index].number;
-            else cell.textContent = events[index].number;
+            const eventLabel = '<span class="goy-pdf-event-number">' + escapeHtml(events[index].number) + '</span> ' +
+                '<span class="goy-pdf-event-name">' + escapeHtml(events[index].name) + '</span>';
+            if (header) header.innerHTML = eventLabel;
+            else cell.innerHTML = eventLabel;
             cell.title = events[index].name;
         });
 

@@ -18,28 +18,33 @@ if (existingFilenamesMatch) {
 
 console.log(`Found ${existingFilenames.size} existing entries in preloaded data`);
 
-// Find all CSV files in Results and Scratch folders
+// Find all CSV files in Results folder (canonical source after Scratch copy)
 const resultsPath = path.join('C:', 'Users', 'enkelly', 'OneDrive - Microsoft', 'Desktop', 'GoY_Ecclectic', 'Results');
 const scratchPath = path.join('C:', 'Users', 'enkelly', 'OneDrive - Microsoft', 'Desktop', 'GoY_Ecclectic', 'Scratch');
 
 const resultsCsvs = fs.readdirSync(resultsPath)
   .filter(f => f.endsWith('.csv'))
-  .map(f => ({ filename: f, folder: resultsPath }))
-  .sort((a, b) => a.filename.localeCompare(b.filename));
+  .sort((a, b) => a.localeCompare(b));
 
-const scratchCsvs = fs.existsSync(scratchPath) ? fs.readdirSync(scratchPath)
-  .filter(f => f.endsWith('.csv'))
-  .map(f => ({ filename: f, folder: scratchPath }))
-  .sort((a, b) => a.filename.localeCompare(b.filename)) : [];
+console.log(`Found ${resultsCsvs.length} CSV files in Results folder (canonical source)`);
 
-const allCsvs = [...resultsCsvs, ...scratchCsvs];
-
-console.log(`Found ${resultsCsvs.length} CSV files in Results folder`);
-console.log(`Found ${scratchCsvs.length} CSV files in Scratch folder`);
-console.log(`Found ${allCsvs.length} total CSV files`);
+// Check if Scratch folder has any files missing from Results (safety check)
+if (fs.existsSync(scratchPath)) {
+  const scratchCsvs = fs.readdirSync(scratchPath)
+    .filter(f => f.endsWith('.csv'));
+  
+  const scratchOnly = scratchCsvs.filter(f => !resultsCsvs.includes(f));
+  if (scratchOnly.length > 0) {
+    console.log(`\n⚠️  Warning: Scratch folder has ${scratchOnly.length} file(s) not in Results:`);
+    scratchOnly.forEach(f => console.log(`  - ${f}`));
+    console.log('Please copy these to Results folder before running append-preload again.\n');
+    process.exit(1);
+  }
+  console.log(`Scratch folder check OK (${scratchCsvs.length} files, all in Results)\n`);
+}
 
 // Identify new files not in preload
-const newFiles = allCsvs.filter(f => !existingFilenames.has(f.filename));
+const newFiles = resultsCsvs.filter(f => !existingFilenames.has(f));
 
 if (newFiles.length === 0) {
   console.log('No new CSV files to add.');
@@ -47,12 +52,12 @@ if (newFiles.length === 0) {
 }
 
 console.log(`\nNew files to add (${newFiles.length}):`);
-newFiles.forEach(f => console.log(`  - ${f.filename} (from ${f.folder.split('\\').pop()})`);
+newFiles.forEach(f => console.log(`  - ${f}`));
 
 // Build new entries
 const newEntries = [];
-newFiles.forEach(file => {
-  const filepath = path.join(file.folder, file.filename);
+newFiles.forEach(filename => {
+  const filepath = path.join(resultsPath, filename);
   const content = fs.readFileSync(filepath, 'utf8');
   
   // Escape quotes and newlines for JSON
@@ -63,7 +68,7 @@ newFiles.forEach(file => {
     .replace(/\r/g, '\\r');
   
   newEntries.push({
-    filename: file.filename,
+    filename: filename,
     content: escapedContent
   });
 });

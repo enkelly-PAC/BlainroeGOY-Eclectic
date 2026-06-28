@@ -288,7 +288,7 @@ def render_newsletter(event_name: str, deltas: dict) -> str:
     intro = (f"After a busy {event_name} weekend, the Eclectic and GoY tables "
              f"saw movement across all three races")
     if scorecards_added:
-        intro += f", with {scorecards_added} scorecards added"
+        intro += f", with {scorecards_added} players returning a scorecard"
     intro += "."
     eagles_bit = ''
     if gi['eagles_delta'] is not None:

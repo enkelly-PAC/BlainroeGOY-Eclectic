@@ -192,16 +192,29 @@ $slug      = Convert-EventSlug $EventName
 $draftPath = Join-Path $DraftOutDir ("{0}_Newsletter_{1}.md" -f $slug, $timestamp)
 if (-not (Test-Path $DraftOutDir)) { New-Item -ItemType Directory -Path $DraftOutDir | Out-Null }
 
-# Resolve scorecards-added: explicit param > Step 1 state > auto-detect.
+# Resolve scorecards-added: explicit param > parse aggregated results CSV > auto-detect.
 $scorecardsArg = ''
 if ($PSBoundParameters.ContainsKey('ScorecardsAdded') -and $null -ne $ScorecardsAdded) {
     $scorecardsArg = [string]$ScorecardsAdded
     Write-Host ("  Scorecards (from -ScorecardsAdded): {0}" -f $scorecardsArg)
-} elseif ($state -and $state.appended_count -gt 0) {
-    $scorecardsArg = [string]$state.appended_count
-    Write-Host ("  Scorecards (from Step 1 state): {0}" -f $scorecardsArg)
 } else {
-    Write-Host '  Scorecards: auto-detect from GoY snapshot delta.'
+    # Parse "Number of Cards Processed = X" from the most recently modified
+    # aggregated results CSV. This gives the actual player count, not the CSV file count.
+    $aggregatedCsv = Get-ChildItem -Path (Join-Path $DesktopRoot 'Results') `
+        -Filter 'Competition Report (Aggregated*.csv' -ErrorAction SilentlyContinue |
+        Sort-Object LastWriteTime -Descending |
+        Select-Object -First 1
+    if ($aggregatedCsv) {
+        $cardsLine = Select-String -Path $aggregatedCsv.FullName `
+            -Pattern 'Number of Cards Processed = (\d+)' | Select-Object -First 1
+        if ($cardsLine) {
+            $scorecardsArg = $cardsLine.Matches[0].Groups[1].Value
+            Write-Host ("  Scorecards (from '{0}'): {1}" -f $aggregatedCsv.Name, $scorecardsArg)
+        }
+    }
+    if (-not $scorecardsArg) {
+        Write-Host '  Scorecards: auto-detect from GoY snapshot delta.'
+    }
 }
 
 if ($scorecardsArg) {

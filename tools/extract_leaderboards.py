@@ -122,7 +122,9 @@ def parse_eclectic(text: str) -> dict:
         if any(c.isdigit() for c in name.split()[0]):
             continue
         rounds = int(m.group(3))
+        h_out = [int(x) for x in m.group(4).split()]
         out_score = int(m.group(5))
+        h_in = [int(x) for x in m.group(6).split()]
         in_score = int(m.group(7))
         gross = int(m.group(8))
         hcap = int(m.group(9)) if m.group(9) else None
@@ -131,6 +133,7 @@ def parse_eclectic(text: str) -> dict:
             'rank': rank,
             'name': name,
             'rounds': rounds,
+            'holes': h_out + h_in,
             'out': out_score,
             'in': in_score,
             'gross': gross,

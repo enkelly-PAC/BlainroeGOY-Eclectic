@@ -166,6 +166,17 @@ def compute_eclectic_deltas(prior: dict, current: dict,
             continue
         delta = cur_score - prev_score
         if delta < 0:
+            prev_holes = prev.get('holes', [])
+            cur_holes = cur.get('holes', [])
+            improved_holes = []
+            if len(prev_holes) == 18 and len(cur_holes) == 18:
+                for i, (ph, ch) in enumerate(zip(prev_holes, cur_holes)):
+                    if ch < ph:
+                        improved_holes.append({
+                            'hole': i + 1,
+                            'before': ph,
+                            'after': ch,
+                        })
             improvers.append({
                 'name': clean_name(cur['name']),
                 'score_before': prev_score,
@@ -173,6 +184,7 @@ def compute_eclectic_deltas(prior: dict, current: dict,
                 'delta': delta,
                 'rank_before': prev['rank'],
                 'rank_after': cur['rank'],
+                'improved_holes': improved_holes,
             })
 
     # Climb of the week: prioritise improvements that landed in the top of
@@ -453,11 +465,18 @@ def render_newsletter(event_name: str, deltas: dict) -> str:
     # Biggest nett climber (already filtered to top-20 landings only)
     if nett['score_improvers']:
         top_climber = nett['score_improvers'][0]
+        hole_detail = ''
+        if top_climber.get('improved_holes'):
+            parts = [
+                f"hole {h['hole']} ({h['before']} to {h['after']})"
+                for h in top_climber['improved_holes']
+            ]
+            hole_detail = f", improving on {list_to_str(parts)}"
         nett_lines.append(
             f"{top_climber['name']} had the climb of the week, moving from "
             f"{top_climber['rank_before']}{ordinal(top_climber['rank_before'])} to "
             f"{top_climber['rank_after']}{ordinal(top_climber['rank_after'])}, "
-            f"improving his Nett score by {abs(top_climber['delta'])} shots."
+            f"improving his Nett score by {abs(top_climber['delta'])} shots{hole_detail}."
         )
 
     if nett_lines:

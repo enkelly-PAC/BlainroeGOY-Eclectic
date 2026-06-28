@@ -1115,7 +1115,7 @@ function renderEclecticInsights(data) {
     html += '<div class="insight-stats">';
     html += '<div class="stat-item"><span class="stat-num">' + totalPlayers + '</span><span class="stat-label">Players</span></div>';
     html += '<div class="stat-item"><span class="stat-num">' + completePlayers.length + '</span><span class="stat-label">Full Cards</span></div>';
-    html += '<div class="stat-item"><span class="stat-num">' + totalEagles + '</span><span class="stat-label">🟡 Eagles</span></div>';
+    html += '<div class="stat-item"><span class="stat-num">' + totalEagles + '</span><span class="stat-label">🟡 Total Eagles</span></div>';
     html += '<div class="stat-item"><span class="stat-num">' + totalBirdies + '</span><span class="stat-label">🔴 Birdies</span></div>';
     html += '<div class="stat-item"><span class="stat-num">' + totalPars + '</span><span class="stat-label">🟢 Pars</span></div>';
     if (completePlayers.length > 0) {
@@ -1188,8 +1188,8 @@ function renderEclecticInsights(data) {
     // Eagles club
     if (eaglePlayers.length > 0) {
         html += '<div class="insight-card">';
-        html += '<h4>🦅 Eagle Club</h4>';
-        html += '<table class="insight-table"><thead><tr><th>Player</th><th>Eagles</th></tr></thead><tbody>';
+        html += '<h4>🦅 Hole Eagles Club</h4>';
+        html += '<table class="insight-table"><thead><tr><th>Player</th><th>Holes Eagled</th></tr></thead><tbody>';
         for (const p of eaglePlayers) {
             html += '<tr><td>' + escapeHtml(displayName(p.name)) + '</td>';
             html += '<td><strong>🟡 ' + p.eagles + '</strong></td></tr>';

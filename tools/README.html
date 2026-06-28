@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Blainroe GOY and Eclectic, Sunday Workflow</title>
+<style>
+  :root {
+    --bg: #fafafa;
+    --panel: #ffffff;
+    --border: #e5e5e5;
+    --text: #1f2328;
+    --muted: #6e7681;
+    --accent: #047857;
+    --accent-light: #ecfdf5;
+    --warn-bg: #fffbeb;
+    --warn-border: #fde68a;
+    --code-bg: #f3f4f6;
+    --code-border: #e5e7eb;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+  }
+  .container {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 32px 24px 80px;
+  }
+  h1 {
+    font-size: 2em;
+    margin: 0 0 8px;
+    color: var(--accent);
+    border-bottom: 2px solid var(--accent);
+    padding-bottom: 8px;
+  }
+  h2 {
+    font-size: 1.4em;
+    margin: 40px 0 12px;
+    color: var(--text);
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 6px;
+  }
+  h3 {
+    font-size: 1.15em;
+    margin: 28px 0 10px;
+    color: var(--accent);
+  }
+  p, ul, ol, table { margin: 10px 0; }
+  ul, ol { padding-left: 24px; }
+  li { margin: 4px 0; }
+  code {
+    background: var(--code-bg);
+    border: 1px solid var(--code-border);
+    border-radius: 4px;
+    padding: 1px 6px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.92em;
+    color: #b91c1c;
+  }
+  pre {
+    background: #0f172a;
+    color: #e2e8f0;
+    border-radius: 6px;
+    padding: 14px 16px;
+    overflow-x: auto;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.9em;
+    line-height: 1.5;
+  }
+  pre code {
+    background: transparent;
+    border: none;
+    padding: 0;
+    color: inherit;
+  }
+  .lead {
+    font-size: 1.05em;
+    color: var(--muted);
+  }
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 6px;
+    padding: 16px 20px;
+    margin: 16px 0;
+  }
+  .panel.warn {
+    background: var(--warn-bg);
+    border-left-color: #d97706;
+    border-color: var(--warn-border);
+  }
+  .step {
+    display: inline-block;
+    background: var(--accent);
+    color: white;
+    border-radius: 999px;
+    padding: 2px 12px;
+    font-size: 0.85em;
+    font-weight: 600;
+    margin-right: 8px;
+  }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+  }
+  th, td {
+    text-align: left;
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    vertical-align: top;
+  }
+  th {
+    background: var(--accent-light);
+    font-weight: 600;
+  }
+  tbody tr:nth-child(even) { background: #fafafa; }
+  .path {
+    display: block;
+    background: var(--code-bg);
+    border: 1px dashed var(--code-border);
+    border-radius: 4px;
+    padding: 8px 12px;
+    margin: 6px 0;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.9em;
+    color: #1f2937;
+    word-break: break-all;
+  }
+  a { color: var(--accent); }
+  hr { border: none; border-top: 1px solid var(--border); margin: 28px 0; }
+  .toc {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 12px 20px;
+    margin: 16px 0 28px;
+  }
+  .toc ul { margin: 4px 0; padding-left: 22px; }
+  .toc li { margin: 2px 0; }
+  footer {
+    margin-top: 60px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 0.85em;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>Blainroe GOY and Eclectic, Sunday Workflow</h1>
+<p class="lead">A two-step PowerShell workflow for refreshing the leaderboards, the live web app, and the draft member newsletter every Sunday.</p>
+
+<div class="toc">
+  <strong>Contents</strong>
+  <ul>
+    <li><a href="#tldr">TL;DR (every Sunday)</a></li>
+    <li><a href="#why">Why two steps?</a></li>
+    <li><a href="#pdfs">The 5 PDFs</a></li>
+    <li><a href="#switches">Useful switches</a></li>
+    <li><a href="#state">State file</a></li>
+    <li><a href="#examples">Examples</a></li>
+    <li><a href="#what">What the scripts do (for the curious)</a></li>
+    <li><a href="#troubleshooting">When something goes wrong</a></li>
+  </ul>
+</div>
+
+<h2 id="tldr">TL;DR (every Sunday)</h2>
+
+<h3><span class="step">Step 1</span>Ingest the scorecards</h3>
+<p>Drop the day's CSVs (both Eclectic days if there's an alt day, plus the GoY results) into:</p>
+<span class="path">C:\Users\enkelly\OneDrive - Microsoft\Desktop\GoY_Ecclectic\Results\</span>
+<p>Then from the repo root, run:</p>
+<pre><code>cd C:\Users\enkelly\BlainroeGOY-Eclectic
+.\tools\Step1-IngestCsvs.ps1</code></pre>
+<p>This loads any new CSVs into <code>js\preloaded-data.js</code>, bumps the version, and pushes to GitHub. Wait one to two minutes for GitHub Pages to redeploy.</p>
+
+<h3><span class="step">Step 2</span>Export PDFs and draft the newsletter</h3>
+<p>Open the live app (<a href="https://enkelly-pac.github.io/BlainroeGOY-Eclectic/">https://enkelly-pac.github.io/BlainroeGOY-Eclectic/</a>), which now has the new scores. <strong>Export the 5 PDFs</strong> and save them into:</p>
+<span class="path">C:\Users\enkelly\OneDrive - Microsoft\Desktop\GoY_Ecclectic\PublishResults\</span>
+<p>(Just the root folder; the script moves them into a snapshot folder.)</p>
+<p>Then run:</p>
+<pre><code>.\tools\Step2-PublishNewsletter.ps1 -EventName 'July Medal'</code></pre>
+<p>Use whatever event name fits the week ('July Medal', 'Captain's Prize', 'WH Scott Trophy', etc.). Quote it if it has spaces.</p>
+<p>The script writes a draft to:</p>
+<span class="path">C:\Users\enkelly\OneDrive - Microsoft\AI Strategy\&lt;EventSlug&gt;_Newsletter_&lt;yyyymmdd&gt;.md</span>
+<p>Open the draft, polish the wording, then it's ready to send.</p>
+
+<h2 id="why">Why two steps?</h2>
+<div class="panel">
+<p>The 5 PDFs are an output of the same web app you're updating. So the order has to be:</p>
+<ol>
+  <li>Push new CSVs to the app (Step 1).</li>
+  <li>Let the app redeploy on GitHub Pages.</li>
+  <li>Export PDFs from the now-updated app.</li>
+  <li>Diff against last week and draft the newsletter (Step 2).</li>
+</ol>
+<p>If you tried to do it all in one go, the "current" PDFs would still reflect last week's data and the deltas would be wrong. Step 2 actually warns you if any of the PDFs you exported are older than Step 1's ingest timestamp.</p>
+</div>
+
+<h2 id="pdfs">The 5 PDFs</h2>
+<p>Whatever filenames the export gives them, they must contain these patterns (the script does case-insensitive substring matching):</p>
+<ul>
+  <li><code>Captain's Eclectic Cup (Gross)</code></li>
+  <li><code>Captain's Eclectic Cup (Nett)</code></li>
+  <li><code>Golfer of the Year</code></li>
+  <li><code>Gross Eclectic Insights</code></li>
+  <li><code>Nett Eclectic Insights</code></li>
+</ul>
+
+<h2 id="switches">Useful switches</h2>
+<table>
+  <thead>
+    <tr><th>Script</th><th>Switch</th><th>Purpose</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Step 1</td><td><code>-NoPush</code></td><td>Skip git commit/push (dry run).</td></tr>
+    <tr><td>Step 2</td><td><code>-EventName</code></td><td>Required. Quoted week label.</td></tr>
+    <tr><td>Step 2</td><td><code>-ScorecardsAdded 187</code></td><td>Override the "X scorecards added" headline figure. Otherwise Step 1's count is used.</td></tr>
+    <tr><td>Step 2</td><td><code>-NoPush</code></td><td>Skip git commit/push (dry run).</td></tr>
+  </tbody>
+</table>
+
+<h2 id="state">State file</h2>
+<p>Step 1 writes <code>tools\.last-ingest.json</code> with the count of CSVs appended and the timestamp. Step 2 reads it to (a) seed the "scorecards added" figure and (b) warn if PDFs are stale. Safe to delete; Step 2 will just fall back to auto-detect or ignore the warning.</p>
+
+<h2 id="examples">Examples</h2>
+
+<p>Standard Sunday flow:</p>
+<pre><code>.\tools\Step1-IngestCsvs.ps1
+# ... wait ~2 minutes, open the live app, export the 5 PDFs into PublishResults\ ...
+.\tools\Step2-PublishNewsletter.ps1 -EventName 'July Medal'</code></pre>
+
+<p>Dry run, do not push to GitHub:</p>
+<pre><code>.\tools\Step1-IngestCsvs.ps1 -NoPush
+.\tools\Step2-PublishNewsletter.ps1 -EventName 'July Medal' -NoPush</code></pre>
+
+<p>Lock the headline scorecard figure explicitly:</p>
+<pre><code>.\tools\Step2-PublishNewsletter.ps1 -EventName 'July Medal' -ScorecardsAdded 142</code></pre>
+
+<h2 id="what">What the scripts do (for the curious)</h2>
+<ul>
+  <li><strong><code>tools\extract_leaderboards.py</code></strong>: parses the 5 PDFs into a single JSON snapshot. Handles per-PDF quirks: GoY uses "Surname, Firstname" for the current leader; Gross rows have one trailing total; Nett rows have three (gross, hcap, nett); Insights pages use value-before-label pairs with emoji bullets; etc.</li>
+  <li><strong><code>tools\generate_newsletter.py</code></strong>: diffs two snapshots and writes a draft. Score-anchored (not just position-anchored) logic, so the headline goes to someone who jumped to the top of a table, not someone who shifted at the bottom because others passed them.</li>
+  <li><strong><code>tools\Step1-IngestCsvs.ps1</code></strong>: runs <code>node append-preload.js</code>, pushes the updated <code>preloaded-data.js</code> to GitHub, records the appended count.</li>
+  <li><strong><code>tools\Step2-PublishNewsletter.ps1</code></strong>: validates the 5 PDFs, stages them into <code>After&lt;EventName&gt;\</code>, extracts JSON from prior + current snapshots, runs the newsletter generator, drafts to <code>OneDrive\AI Strategy\</code>, and commits + pushes the snapshot to the repo.</li>
+</ul>
+
+<h2 id="troubleshooting">When something goes wrong</h2>
+
+<div class="panel warn">
+  <strong>Step 1: Scratch folder has files not in Results.</strong> <code>append-preload.js</code> errors out for safety. Move them into <code>Results\</code> and re-run.
+</div>
+
+<div class="panel warn">
+  <strong>Step 2: Missing PDF.</strong> The script tells you which pattern didn't match. Re-export it from the live app and drop it into <code>PublishResults\</code>, then re-run Step 2.
+</div>
+
+<div class="panel warn">
+  <strong>Step 2: WARNING about a PDF older than Step 1.</strong> That PDF was exported from the still-stale app (you didn't wait for GitHub Pages to redeploy). Re-export it from the now-fresh live app and re-run Step 2.
+</div>
+
+<div class="panel warn">
+  <strong>Step 2: No prior snapshot found.</strong> The script needs a previous <code>After*\</code> folder to diff against. On the very first run, manually create one with the prior PDFs in it.
+</div>
+
+<div class="panel warn">
+  <strong>Newsletter draft reads oddly.</strong> It is a draft. Open the <code>.md</code> file and the paired <code>.deltas.json</code> next to it to see the raw numbers behind every claim, then edit the prose.
+</div>
+
+<div class="panel warn">
+  <strong>Orphan PDFs in <code>PublishResults\</code> root.</strong> The script picks the most recently modified match for each pattern, so old leftovers are ignored. Tidy them up into appropriately named <code>After*\</code> folders when convenient.
+</div>
+
+<footer>
+  Blainroe Golf Club, GOY and Eclectic newsletter tools. Live app: <a href="https://enkelly-pac.github.io/BlainroeGOY-Eclectic/">https://enkelly-pac.github.io/BlainroeGOY-Eclectic/</a>
+</footer>
+
+</div>
+</body>
+</html>

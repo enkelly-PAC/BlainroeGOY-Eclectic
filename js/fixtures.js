@@ -148,7 +148,7 @@ const GOY_FIXTURES = {
         {
             name: "Captain's Prize to Men",
             keywords: ["captains prize", "captain's prize", "gary kennedy"],
-            dates: ["2026-07-18", "2026-07-19", "2026-07-25"],
+            dates: ["2026-07-18", "2026-07-19", "2026-07-26"],
             isGOY: true,
             isEclectic: true,
             isCaptains: true,

@@ -164,6 +164,15 @@ const GOY_FIXTURES = {
             category: "Medal"
         },
         {
+            name: "Men's Singles Stableford (August)",
+            keywords: ["singles stableford", "1st august", "2nd august"],
+            dates: ["2026-08-01", "2026-08-02"],
+            isGOY: false,
+            isEclectic: true,
+            isCaptains: false,
+            category: "Singles Stableford"
+        },
+        {
             name: "Professional's Prize & PGA Tankard (GOY)",
             keywords: ["professional", "pga tankard"],
             dates: ["2026-08-15", "2026-08-16"],

@@ -1,8 +1,8 @@
 {
-  "timestamp": "2026-07-28T15:01:33.7391588+01:00",
-  "appended_count": 1,
+  "timestamp": "2026-08-02T19:40:07.9650649+01:00",
+  "appended_count": 2,
   "appended_files": [
-    "Competition Report (Aggregated Net Result) - Captain's Prize to Men (GOY) - Sunday 27 July 2026.csv"
-  ],
-  "note": "One-off manual ingest: Captain's Prize final GOY standings (double points, junior-exclusion-adjusted)"
+    "SinglesStableford-1st-August-2026-AltDay-Competition Scorecards.csv",
+    "SinglesStableford-2nd-August-2026-Sunday-Competition Scorecards.csv"
+  ]
 }

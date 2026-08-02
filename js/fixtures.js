@@ -146,11 +146,20 @@ const GOY_FIXTURES = {
             category: "Medal"
         },
         {
-            name: "Captain's Prize to Men",
-            keywords: ["captains prize", "captain's prize", "gary kennedy"],
-            dates: ["2026-07-18", "2026-07-19", "2026-07-26"],
-            isGOY: true,
+            name: "Captain's Prize Qualifier",
+            keywords: ["captains qualifier", "captain's qualifier", "qualifier day", "gary kennedy qualifier"],
+            dates: ["2026-07-18", "2026-07-19"],
+            isGOY: false,
             isEclectic: true,
+            isCaptains: false,
+            category: "Captain's Prize"
+        },
+        {
+            name: "Captain's Prize Final (GOY)",
+            keywords: ["captains prize", "captain's prize", "captain's prize to men", "gary kennedy"],
+            dates: ["2026-07-26"],
+            isGOY: true,
+            isEclectic: false,
             isCaptains: true,
             category: "Captain's Prize"
         },

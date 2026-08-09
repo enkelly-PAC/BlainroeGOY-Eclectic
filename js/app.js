@@ -231,6 +231,20 @@ function parseCompetitionReportCSV(text) {
                 scoreText = val.trim();
                 break;
             }
+            // Medal/Strokeplay format for a plus handicap golfer: "70 + 04 = 74"
+            // (gross + extra strokes = net). A plus handicap golfer gives strokes
+            // back rather than receiving them, so it is stored here as a negative
+            // number, matching the sign convention already used for "+" handicaps
+            // parsed from dedicated Eclectic CSV exports elsewhere in this file
+            // (see hcapVal.startsWith('+') below). Net = gross - handicap still
+            // holds: 74 = 70 - (-4).
+            const medalPlusMatch = val.match(/(\d+)\s*\+\s*(\d+)\s*=\s*(\d+)/);
+            if (medalPlusMatch) {
+                score = parseInt(medalPlusMatch[3], 10);  // net score
+                playingHandicap = -parseInt(medalPlusMatch[2], 10);
+                scoreText = val.trim();
+                break;
+            }
             if (val.includes('No Return') || val.includes('NR') || val.includes('DQ')) { scoreText = 'NR'; break; }
         }
         if (fields[0] === '-') continue;
@@ -363,6 +377,7 @@ function extractAllDateKeys(dateStr) {
 function findMatchingCompetition(info, scorecards, playerNames) {
     const dateKeys = extractAllDateKeys(info.date);
     for (const comp of appState.competitions) {
+        if (comp.hidden) continue; // folded into another competition, not a standalone match target
         const compDateKeys = extractAllDateKeys(comp.info.date);
         // Match if any parsed date overlaps. Strict set-membership comparison
         // prevents bugs like "3 May 2026" matching "23 May 2026" via substring.
@@ -378,6 +393,7 @@ function findMatchingCompetition(info, scorecards, playerNames) {
     if (scorecards || playerNames) {
         const names = playerNames || new Set(Object.keys(scorecards));
         for (const comp of appState.competitions) {
+            if (comp.hidden) continue;
             // Skip comps where both have parseable dates that don't overlap
             // (prevents merging different weeks at the same club via player overlap)
             const compDateKeys2 = extractAllDateKeys(comp.info.date);
@@ -404,6 +420,93 @@ function findMatchingCompetition(info, scorecards, playerNames) {
     return null;
 }
 
+// Word-order-agnostic name compatibility check used by findAllMatchingCompetitionsByDate.
+// Real Handicap Master exports name the same tournament differently across its
+// scorecard files and aggregate report (e.g. "August Medal Alt Day",
+// "August Men's Medal Strokes - Blue" and "Men's August Medal" are all the same
+// two-day medal), so a strict prefix/substring check is too rigid. Instead, tokenize
+// both names, drop generic export boilerplate words, and require at least two
+// shared meaningful tokens (e.g. "august" and "medal") before treating two
+// same-date competitions as the same event.
+const COMPETITION_NAME_FILLER_WORDS = new Set([
+    'the', 'a', 'an', 'to', 'of', 'and', 'at', 'in', 'on', 'for', 'by',
+    'result', 'results', 'report', 'reports', 'aggregated', 'competition', 'competitions',
+    'net', 'full', 'scorecard', 'scorecards', 'played', 'round', 'sunday', 'saturday'
+]);
+
+function tokenizeCompetitionName(name) {
+    return (name.toLowerCase().match(/[a-z0-9']+/g) || [])
+        .filter(t => t.length > 1 && !COMPETITION_NAME_FILLER_WORDS.has(t));
+}
+
+function namesLikelySameTournament(nameA, nameB) {
+    if (!nameA || !nameB) return true; // not enough info to rule out a date-based match
+    const tokensB = new Set(tokenizeCompetitionName(nameB));
+    let shared = 0;
+    for (const t of tokenizeCompetitionName(nameA)) { if (tokensB.has(t)) shared++; }
+    return shared >= 2;
+}
+
+// Find every non-hidden competition whose date overlaps the given info's date(s),
+// applying the word-order-agnostic name-compatibility guard above so unrelated
+// competitions are not folded together just because a date matches. Used for
+// multi-day aggregate reports (e.g. a report spanning Sat & Sun) that may need to
+// reconcile against two separately loaded single-day scorecard competitions.
+function findAllMatchingCompetitionsByDate(info) {
+    const dateKeys = extractAllDateKeys(info.date);
+    if (!dateKeys.length) return [];
+    const matches = [];
+    for (const comp of appState.competitions) {
+        if (comp.hidden) continue;
+        const compDateKeys = extractAllDateKeys(comp.info.date);
+        if (!compDateKeys.length) continue;
+        if (!dateKeys.some(d => compDateKeys.includes(d))) continue;
+        if (!namesLikelySameTournament(info.name, comp.info.name)) continue;
+        matches.push(comp);
+    }
+    return matches;
+}
+
+// A hidden competition (folded into a primary row by foldCompetitionsIntoPrimary)
+// still owns its own scorecards, so re-importing the exact daily scorecard file
+// that originally created it must route back to that hidden competition rather
+// than to the (now wider-dated) primary. Without this, findMatchingCompetition
+// would skip the hidden owner, match the primary instead, and merge the same
+// day's scorecards into the primary on top of the untouched copy still sitting
+// in the hidden competition, double counting that player's Eclectic rounds.
+// This is intentionally separate from findMatchingCompetition (which must keep
+// skipping hidden competitions for report/general matching) and is only used
+// for scorecard imports, where exact ownership of a specific day matters more
+// than the widened date range a primary picks up after folding.
+function findHiddenOwnerForScorecard(info) {
+    const dateKeys = extractAllDateKeys(info.date);
+    if (!dateKeys.length) return null;
+    for (const comp of appState.competitions) {
+        if (!comp.hidden) continue;
+        const compDateKeys = extractAllDateKeys(comp.info.date);
+        if (!compDateKeys.length) continue;
+        if (!dateKeys.some(d => compDateKeys.includes(d))) continue;
+        if (!namesLikelySameTournament(info.name, comp.info.name)) continue;
+        return comp;
+    }
+    return null;
+}
+
+// Fold one or more duplicate competitions into a single primary competition so
+// they render as one row in Loaded Competitions, while leaving each duplicate's
+// own scorecards/results untouched so downstream calculations (GOY, Eclectic)
+// keep iterating over every original competition entry exactly as before.
+function foldCompetitionsIntoPrimary(primary, duplicates) {
+    primary.mergedCompetitionIds = primary.mergedCompetitionIds || [];
+    for (const dup of duplicates) {
+        if (dup === primary) continue;
+        dup.hidden = true;
+        dup.mergedIntoId = primary.id;
+        if (!primary.mergedCompetitionIds.includes(dup.id)) primary.mergedCompetitionIds.push(dup.id);
+    }
+    return primary;
+}
+
 function processUploadedFile(text, filename) {
     const type = detectCSVType(text);
 
@@ -417,7 +520,12 @@ function processUploadedFile(text, filename) {
     if (type === 'scorecards') {
         const parsed = parseScorecardCSV(text);
         const playerCount = Object.keys(parsed.scorecards).length;
-        const existing = findMatchingCompetition(parsed.info, parsed.scorecards);
+        // Re-importing the exact daily scorecard file that a primary row folded
+        // (see findHiddenOwnerForScorecard) must go back to that hidden owner,
+        // not to the primary, otherwise the same day's scores would be merged
+        // into the primary on top of the copy still held by the hidden owner,
+        // double counting that day for every player who played it.
+        const existing = findHiddenOwnerForScorecard(parsed.info) || findMatchingCompetition(parsed.info, parsed.scorecards);
         if (existing) {
             existing.scorecards = { ...existing.scorecards, ...parsed.scorecards };
             existing.hasScorecard = true;
@@ -436,7 +544,27 @@ function processUploadedFile(text, filename) {
     } else if (type === 'report') {
         const parsed = parseCompetitionReportCSV(text);
         const existingNames = new Set(parsed.results.map(r => r.playerName));
-        const existing = findMatchingCompetition(parsed.info, null, existingNames);
+        // A multi-day aggregate report (e.g. "played on Saturday & Sunday") can
+        // legitimately overlap two separately loaded single-day scorecard
+        // competitions (alt-day round + main round of the same medal). Fold
+        // any extra matches into the first one so the report attaches exactly
+        // once and Loaded Competitions shows a single combined row.
+        // findAllMatchingCompetitionsByDate applies a name-compatibility guard,
+        // so it is safe from the "same date, different event" false merge that
+        // findMatchingCompetition's plain date loop is prone to; only fall back
+        // to findMatchingCompetition (player-overlap based) when the report has
+        // no parseable date at all to match against.
+        const reportDateKeys = extractAllDateKeys(parsed.info.date);
+        let existing = null;
+        if (reportDateKeys.length) {
+            const dateMatches = findAllMatchingCompetitionsByDate(parsed.info);
+            if (dateMatches.length) {
+                existing = dateMatches[0];
+                if (dateMatches.length > 1) foldCompetitionsIntoPrimary(dateMatches[0], dateMatches.slice(1));
+            }
+        } else {
+            existing = findMatchingCompetition(parsed.info, null, existingNames);
+        }
         if (existing) {
             existing.results = parsed.results;
             existing.handicaps = { ...existing.handicaps, ...parsed.handicaps };
@@ -623,7 +751,10 @@ function calculateEclecticFromScorecards() {
             scores,
             gross,
             handicap,
-            handicapDisplay: String(handicap),
+            // Plus handicaps are stored internally as negative numbers (golf
+            // convention, see medalPlusMatch above), but should still read as
+            // "+4" rather than "-4" wherever the handicap is displayed.
+            handicapDisplay: handicap < 0 ? ('+' + Math.abs(handicap)) : String(handicap),
             net,
             countback: '',
             back9Gross, back6Gross, back3Gross, lastHoleGross,
@@ -1788,7 +1919,11 @@ function renderCompetitionsTable() {
         tbody.appendChild(tr);
     }
 
-    for (const comp of [...appState.competitions].sort((a, b) => {
+    // Competitions folded into a primary row (see foldCompetitionsIntoPrimary) are
+    // hidden here so a multi-day report that spans two separately loaded daily
+    // scorecard competitions shows as one row, not two. Their underlying data stays
+    // in appState.competitions untouched so GOY/Eclectic calculations still see it.
+    for (const comp of [...appState.competitions].filter(c => !c.hidden).sort((a, b) => {
         // Sort by date descending (most recent first); fall back to name when no date.
         const da = extractDateKey(a.info.date) || '';
         const db = extractDateKey(b.info.date) || '';
@@ -1797,8 +1932,14 @@ function renderCompetitionsTable() {
         if (db) return 1;
         return (a.info.name || '').localeCompare(b.info.name || '');
     })) {
+        const mergedComps = (comp.mergedCompetitionIds || [])
+            .map(id => appState.competitions.find(c => c.id === id))
+            .filter(Boolean);
         const playerCount = comp.hasScorecard
-            ? Object.keys(comp.scorecards).length
+            ? new Set([
+                ...Object.keys(comp.scorecards),
+                ...mergedComps.flatMap(c => Object.keys(c.scorecards || {}))
+            ]).size
             : comp.results.length;
         // Show auto-detect badge
         const autoTag = comp.fixtureMatch
@@ -1824,7 +1965,15 @@ function toggleConfig(compId, key, value) {
 }
 
 function removeCompetition(compId) {
-    appState.competitions = appState.competitions.filter(c => c.id !== compId);
+    const comp = appState.competitions.find(c => c.id === compId);
+    // Removing a row that folded other daily scorecard competitions into itself
+    // must also remove those hidden duplicates, otherwise their scorecards would
+    // keep feeding the Eclectic calculation after the visible row is gone.
+    const idsToRemove = new Set([compId]);
+    if (comp && comp.mergedCompetitionIds) {
+        for (const id of comp.mergedCompetitionIds) idsToRemove.add(id);
+    }
+    appState.competitions = appState.competitions.filter(c => !idsToRemove.has(c.id));
     saveToStorage();
     renderCompetitionsTable();
     if (appState.competitions.length === 0 && !appState.eclecticData) {

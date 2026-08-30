@@ -191,6 +191,15 @@ const GOY_FIXTURES = {
             category: "GOY Trophy"
         },
         {
+            name: "Men's Singles Stableford (29 and 30 August)",
+            keywords: ["singles stableford"],
+            dates: ["2026-08-29", "2026-08-30"],
+            isGOY: false,
+            isEclectic: true,
+            isCaptains: false,
+            category: "Singles Stableford"
+        },
+        {
             name: "Men's September Medal",
             keywords: ["september medal"],
             dates: ["2026-09-05", "2026-09-06"],
@@ -234,49 +243,30 @@ function matchCompetitionToFixture(compName, compDateStr) {
     // Strategy 1: Check for "(GOY)" in the CSV competition name itself
     const hasGOYMarker = nameLower.includes('(goy)');
 
-    // Strategy 2: Keyword match against fixture list
-    for (const fixture of GOY_FIXTURES.competitions) {
-        // Check keywords against competition name
-        const keywordMatch = fixture.keywords.some(kw => nameLower.includes(kw));
+    function fixtureResult(fixture) {
+        const goy = (fixture.isGOY === false) ? false : true;
+        const ecl = (fixture.isEclectic === false) ? false :
+                    (fixture.isEclectic === true) ? true : goy;
+        return { isGOY: goy, isEclectic: ecl, isCaptains: fixture.isCaptains, fixture: fixture };
+    }
 
-        // Check date match
-        let dateMatch = false;
-        if (compDateStr) {
-            const dateKey = extractFixtureDateKey(compDateStr);
-            if (dateKey) {
-                dateMatch = fixture.dates.includes(dateKey);
-            }
-            // Also try matching partial date strings
-            if (!dateMatch) {
-                // Extract ALL number tokens from the date string and compare as integers.
-                // This avoids the old substring bug where day=2 matched "24" or "2026".
-                const dayTokens = (compDateStr.match(/\d+/g) || []).map(t => parseInt(t, 10));
-                for (const fd of fixture.dates) {
-                    const fDate = new Date(fd);
-                    const dayNum = fDate.getDate();
-                    const monthNames = ['january','february','march','april','may','june',
-                                        'july','august','september','october','november','december'];
-                    const monthName = monthNames[fDate.getMonth()];
-                    if (compDateStr.toLowerCase().includes(monthName) &&
-                        dayTokens.includes(dayNum)) {
-                        dateMatch = true;
-                        break;
-                    }
-                }
-            }
-        }
-
-        if (keywordMatch || dateMatch) {
-            // Honour the fixture's explicit isGOY / isEclectic flags
-            // (default isGOY=true for back-compat; default isEclectic mirrors isGOY)
-            const goy = (fixture.isGOY === false) ? false : true;
-            const ecl = (fixture.isEclectic === false) ? false :
-                        (fixture.isEclectic === true) ? true : goy;
-            return { isGOY: goy, isEclectic: ecl, isCaptains: fixture.isCaptains, fixture: fixture };
+    // Strategy 2: Prefer exact dates so generic names such as "Singles Stableford"
+    // cannot match an earlier event with the same title.
+    if (compDateStr) {
+        const dateKey = extractFixtureDateKey(compDateStr);
+        if (dateKey) {
+            const exactDateFixture = GOY_FIXTURES.competitions.find(fixture => fixture.dates.includes(dateKey));
+            if (exactDateFixture) return fixtureResult(exactDateFixture);
         }
     }
 
-    // Strategy 3: All medals (March–October) are GOY-qualifying
+    // Strategy 3: Keyword match against fixture list
+    for (const fixture of GOY_FIXTURES.competitions) {
+        const keywordMatch = fixture.keywords.some(kw => nameLower.includes(kw));
+        if (keywordMatch) return fixtureResult(fixture);
+    }
+
+    // Strategy 4: All medals from March to October are GOY-qualifying
     if (nameLower.includes('medal')) {
         const nonGoyMedalMonths = ['november', 'december', 'january', 'february'];
         const isExcluded = nonGoyMedalMonths.some(m => nameLower.includes(m));
@@ -285,7 +275,7 @@ function matchCompetitionToFixture(compName, compDateStr) {
         }
     }
 
-    // Strategy 4: If the CSV name contains "(GOY)" but didn't match a fixture,
+    // Strategy 5: If the CSV name contains "(GOY)" but didn't match a fixture,
     // still mark as GOY (future-proofing for mid-year additions)
     if (hasGOYMarker) {
         return { isGOY: true, isEclectic: true, isCaptains: false, fixture: null };

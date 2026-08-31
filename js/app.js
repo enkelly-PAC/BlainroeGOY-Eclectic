@@ -76,6 +76,13 @@ function normalizePlayerName(name) {
     return name.replace(/\s+/g, ' ').trim();
 }
 
+function normalizeDisplayText(text) {
+    if (!text) return '';
+    return text
+        .replace(/([A-Za-z])\uFFFDs\b/g, "$1's")
+        .replace(/([A-Za-z])\u00E2\u20AC\u2122s\b/g, "$1's");
+}
+
 function displayName(name) {
     if (!name) return '';
     const parts = name.split(',');
@@ -134,7 +141,11 @@ function extractCompetitionInfo(lines) {
             }
         }
     }
-    return { name, date, venue };
+    return {
+        name: normalizeDisplayText(name),
+        date: normalizeDisplayText(date),
+        venue: normalizeDisplayText(venue)
+    };
 }
 
 // ============ SCORECARD PARSING ============
@@ -3004,6 +3015,11 @@ function loadFromStorage() {
         if (data.version >= 1 && Array.isArray(data.competitions)) {
             appState.competitions = data.competitions;
             if (data.eclecticData) appState.eclecticData = data.eclecticData;
+            for (const comp of appState.competitions) {
+                comp.info.name = normalizeDisplayText(comp.info.name);
+                comp.info.date = normalizeDisplayText(comp.info.date);
+                comp.info.venue = normalizeDisplayText(comp.info.venue);
+            }
             // Re-apply fixture matching to correct stale flags from old sessions
             if (typeof matchCompetitionToFixture === 'function') {
                 for (const comp of appState.competitions) {

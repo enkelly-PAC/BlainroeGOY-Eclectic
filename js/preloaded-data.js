@@ -1,6 +1,6 @@
 // Auto-generated from GoY_Ecclectic Results + Scratch folders
 // Generated: 2026-08-31 11:11:52
-const PRELOADED_DATA_VERSION = 26;
+const PRELOADED_DATA_VERSION = 27;
 const PRELOADED_CSV_FILES = [
   {
     "filename": "Competition Report (Aggregated Net Result) - Lady Capt's Prize To Men 24th & 25th May 2026 - Sunday 24 May 2026.csv",

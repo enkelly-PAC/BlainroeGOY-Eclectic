@@ -367,6 +367,22 @@ function extractDateKey(dateStr) {
     return all.length ? all[0] : null;
 }
 
+// Extract the LAST (most recent) actual calendar date contained in a date
+// string, e.g. "Saturday 29 August 2026 and Sunday 30 August 2026" returns
+// "2026-08-30", not the first day of the round. Used wherever "when was this
+// competition actually played" chronology matters (handicap selection),
+// as opposed to extractDateKey (first date), which is used for
+// season-start filtering where the earliest day is the correct check.
+// ISO "YYYY-MM-DD" keys compare correctly with a plain string comparison,
+// so no date parsing is needed to find the maximum.
+function extractLatestDateKey(dateStr) {
+    const all = extractAllDateKeys(dateStr);
+    if (!all.length) return null;
+    let latest = all[0];
+    for (const key of all) { if (key > latest) latest = key; }
+    return latest;
+}
+
 // Extract every date in a date string (e.g. "Saturday 23 May 2026 & Sunday 24 May 2026"
 // returns ["2026-05-23", "2026-05-24"]). Used for merge matching so a single-day
 // scorecard can match a multi-day combined comp without falling back to substring
@@ -393,7 +409,22 @@ function findMatchingCompetition(info, scorecards, playerNames) {
         // Match if any parsed date overlaps. Strict set-membership comparison
         // prevents bugs like "3 May 2026" matching "23 May 2026" via substring.
         if (dateKeys.length && compDateKeys.length) {
-            if (dateKeys.some(d => compDateKeys.includes(d))) return comp;
+            if (dateKeys.some(d => compDateKeys.includes(d))) {
+                // A bare date overlap is not enough on its own: two genuinely
+                // different competitions can legitimately fall on the same
+                // calendar date (e.g. a standalone Sunday Singles Stableford
+                // round played the same day as the Captain's Prize Final).
+                // Without this guard a new scorecard for one would silently
+                // merge into the other's existing competition record purely
+                // because the dates coincide, mixing two different fields of
+                // players together and (if the existing competition is
+                // flagged isEclectic:false, as Captain's Prize is) silently
+                // dropping the new round out of Eclectic entirely.
+                if (namesLikelySameTournament(info.name, comp.info.name) || sameFixtureIdentity(info, comp.info)) {
+                    return comp;
+                }
+                continue;
+            }
             continue; // both dates parsed but didn't overlap — not the same comp
         }
         // Last-resort substring fallback only when one side has no parseable date.
@@ -458,6 +489,36 @@ function namesLikelySameTournament(nameA, nameB) {
     return shared >= 2;
 }
 
+// Fallback identity check for when a report and its scorecard(s) share no
+// name tokens at all (real Handicap Master exports sometimes carry a stale
+// or mismatched "line 2" name on the aggregate report, e.g. a Singles
+// Stableford report whose name field literally reads a leftover title from
+// an unrelated event, while its scorecards are named generically). If both
+// sides independently resolve, via the fixture list, to the exact same
+// fixture entry (by date), AND that fixture is explicitly marked
+// identityByDateOnly (see fixtures.js), they are the same competition
+// regardless of what their raw name text says.
+//
+// The identityByDateOnly guard is essential, not optional: matchCompetitionToFixture
+// has a known, accepted weakness (see test-august-medal-merge.js) where a
+// genuinely unrelated same-day competition (e.g. a Ladies event sharing a
+// Sunday with a Men's Medal) can also resolve to a fixture purely through its
+// date-only fallback pass, with no keyword involved at all. Without this
+// guard, that pre-existing weakness would leak into a false MERGE here
+// (folding an unrelated competition's scores into the fixture's real one),
+// not just a harmless mis-tagged fixture badge. Only fixtures we have
+// explicitly reviewed and know have no reliable keyword in their real export
+// data (the standalone Sunday Singles Stableford rounds and the 29/30 August
+// aggregate) opt in via identityByDateOnly.
+function sameFixtureIdentity(infoA, infoB) {
+    if (typeof matchCompetitionToFixture !== 'function') return false;
+    if (!infoA || !infoB) return false;
+    const a = matchCompetitionToFixture(infoA.name, infoA.date);
+    const b = matchCompetitionToFixture(infoB.name, infoB.date);
+    if (!(a && b && a.fixture && b.fixture && a.fixture === b.fixture)) return false;
+    return a.fixture.identityByDateOnly === true;
+}
+
 // Find every non-hidden competition whose date overlaps the given info's date(s),
 // applying the word-order-agnostic name-compatibility guard above so unrelated
 // competitions are not folded together just because a date matches. Used for
@@ -472,7 +533,8 @@ function findAllMatchingCompetitionsByDate(info) {
         const compDateKeys = extractAllDateKeys(comp.info.date);
         if (!compDateKeys.length) continue;
         if (!dateKeys.some(d => compDateKeys.includes(d))) continue;
-        if (!namesLikelySameTournament(info.name, comp.info.name)) continue;
+        if (!namesLikelySameTournament(info.name, comp.info.name) &&
+            !sameFixtureIdentity(info, comp.info)) continue;
         matches.push(comp);
     }
     return matches;
@@ -497,7 +559,8 @@ function findHiddenOwnerForScorecard(info) {
         const compDateKeys = extractAllDateKeys(comp.info.date);
         if (!compDateKeys.length) continue;
         if (!dateKeys.some(d => compDateKeys.includes(d))) continue;
-        if (!namesLikelySameTournament(info.name, comp.info.name)) continue;
+        if (!namesLikelySameTournament(info.name, comp.info.name) &&
+            !sameFixtureIdentity(info, comp.info)) continue;
         return comp;
     }
     return null;
@@ -688,12 +751,27 @@ function calculateEclecticFromScorecards() {
     });
     if (compsWithCards.length === 0) return null;
 
-    // Collect latest handicap per player (from most recent competition)
-    // Sort competitions by date so we pick the latest handicap
+    // Collect latest handicap per player (from most recent competition, by
+    // actual competition date). Sort ascending by each competition's LATEST
+    // played date (extractLatestDateKey, not extractDateKey/first-date) so a
+    // multi-day competition is ordered by when it actually finished, not by
+    // whichever day happens to be printed first in its date string. This is
+    // what lets the Sunday 30 August aggregated report (a two-day 29/30
+    // August competition) correctly supply the terminal playing handicap
+    // even though 29 August is the first date in its date string.
+    //
+    // Same-date ties are resolved deterministically (by competition name,
+    // then filename) rather than by array/import order, so re-uploading
+    // files in a different order, or a differently-ordered PRELOADED_CSV_FILES
+    // array, can never silently change whose handicap wins a tie.
     const sortedComps = [...appState.competitions].sort((a, b) => {
-        const da = extractDateKey(a.info.date) || '';
-        const db = extractDateKey(b.info.date) || '';
-        return da.localeCompare(db);
+        const da = extractLatestDateKey(a.info.date) || '';
+        const db = extractLatestDateKey(b.info.date) || '';
+        if (da !== db) return da.localeCompare(db);
+        const nameA = a.info.name || '';
+        const nameB = b.info.name || '';
+        if (nameA !== nameB) return nameA.localeCompare(nameB);
+        return (a.filename || '').localeCompare(b.filename || '');
     });
     const latestHandicap = {};
     for (const comp of sortedComps) {
@@ -1935,9 +2013,12 @@ function renderCompetitionsTable() {
     // scorecard competitions shows as one row, not two. Their underlying data stays
     // in appState.competitions untouched so GOY/Eclectic calculations still see it.
     for (const comp of [...appState.competitions].filter(c => !c.hidden).sort((a, b) => {
-        // Sort by date descending (most recent first); fall back to name when no date.
-        const da = extractDateKey(a.info.date) || '';
-        const db = extractDateKey(b.info.date) || '';
+        // Sort by latest played date descending (most recent first), using the
+        // last actual date within a multi-day competition (not the first, see
+        // extractLatestDateKey) so display ordering matches handicap chronology.
+        // Fall back to name when no date.
+        const da = extractLatestDateKey(a.info.date) || '';
+        const db = extractLatestDateKey(b.info.date) || '';
         if (da && db) return db.localeCompare(da);
         if (da) return -1;
         if (db) return 1;

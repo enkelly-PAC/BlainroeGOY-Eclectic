@@ -69,7 +69,7 @@ try {
 # How many CSVs were appended this run?
 $appendedCount = 0
 $appendedFiles = @()
-$match = $preloadOutput | Select-String -Pattern 'Successfully appended (\d+) new CSV files' | Select-Object -First 1
+$match = $preloadOutput | Select-String -Pattern 'Successfully (?:appended|updated preloaded data:)\s*(\d+)(?: new CSV files| added)' | Select-Object -First 1
 if ($match) {
     $appendedCount = [int]$match.Matches[0].Groups[1].Value
     $capture = $false

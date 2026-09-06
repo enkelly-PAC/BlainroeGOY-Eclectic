@@ -178,7 +178,39 @@ New-Item -ItemType Directory -Path $snapshotWork | Out-Null
 $priorJson = Join-Path $snapshotWork 'prior.json'
 $newJson   = Join-Path $snapshotWork 'current.json'
 
-& python (Join-Path $ToolsDir 'extract_leaderboards.py') $priorSnapshot.FullName $priorJson
+$priorSource = $priorSnapshot.FullName
+$missingPriorPdfs = @($RequiredPdfs | Where-Object {
+    -not (Find-Pdf -Folder $priorSnapshot.FullName -Pattern $_)
+})
+
+if ($missingPriorPdfs.Count -gt 0) {
+    $priorSource = Join-Path $snapshotWork 'prior-composite'
+    New-Item -ItemType Directory -Path $priorSource | Out-Null
+    Get-ChildItem -Path $priorSnapshot.FullName -Filter '*.pdf' -File |
+        Copy-Item -Destination $priorSource
+
+    $olderSnapshots = Get-ChildItem -Path $PublishDir -Directory -Filter 'After*' |
+        Where-Object {
+            $_.FullName -ne $NewSnapshotDir -and
+            $_.FullName -ne $priorSnapshot.FullName
+        } |
+        Sort-Object LastWriteTime -Descending
+
+    foreach ($pattern in $missingPriorPdfs) {
+        $fallback = $null
+        foreach ($snapshot in $olderSnapshots) {
+            $fallback = Find-Pdf -Folder $snapshot.FullName -Pattern $pattern
+            if ($fallback) { break }
+        }
+        if (-not $fallback) {
+            throw "No prior PDF matching '$pattern' was found in any snapshot."
+        }
+        Copy-Item -LiteralPath $fallback.FullName -Destination $priorSource
+        Write-Host ("  Prior fallback: {0}  <-  {1}" -f $pattern, $fallback.Directory.Name)
+    }
+}
+
+& python (Join-Path $ToolsDir 'extract_leaderboards.py') $priorSource $priorJson
 if ($LASTEXITCODE -ne 0) { throw 'extract_leaderboards.py failed on prior snapshot.' }
 
 & python (Join-Path $ToolsDir 'extract_leaderboards.py') $NewSnapshotDir $newJson

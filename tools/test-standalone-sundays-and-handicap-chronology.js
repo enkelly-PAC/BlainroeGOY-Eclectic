@@ -364,4 +364,20 @@ function loadCsv(sandbox, text, filename) {
     console.log("Test 6 passed: standalone Sundays are Eclectic-only and the 26 July date collision with Captain's Prize Final resolves correctly for both.");
 }
 
+// ============================================================
+// Test 7: the 19 and 20 September weekend fixture is tracked as
+// Eclectic-only and can never add GOY points.
+// ============================================================
+{
+    const sandbox = makeSandbox();
+    const match = run(sandbox,
+        `matchCompetitionToFixture(${JSON.stringify("Men's Weekend - Singles Stableford - 19th/20th September 2026")}, ${JSON.stringify('Saturday 19 September 2026 & Sunday 20 September 2026')})`);
+    assert.ok(match, '19 and 20 September weekend should resolve to a fixture');
+    assert.strictEqual(match.isGOY, false, '19 and 20 September weekend must not count towards GOY');
+    assert.strictEqual(match.isEclectic, true, '19 and 20 September weekend must count towards Eclectic');
+    assert.strictEqual(match.isCaptains, false, '19 and 20 September weekend must not be flagged as Captains');
+
+    console.log('Test 7 passed: 19 and 20 September weekend is tracked as Eclectic-only.');
+}
+
 console.log('\nAll standalone-Sunday / handicap-chronology regression assertions passed.');

@@ -404,4 +404,114 @@ function loadCsv(sandbox, text, filename) {
     console.log('Test 8 passed: 26 and 27 September is Eclectic-only and does not duplicate the October Medal dates.');
 }
 
+// ============================================================
+// Test 9: non-GOY Singles Stableford fixtures and loaded rows use
+// the same date-based display name format.
+// ============================================================
+{
+    const sandbox = makeSandbox();
+    const fixtureNames = run(sandbox,
+        `GOY_FIXTURES.competitions
+            .filter(fixture => fixture.isGOY === false && fixture.category === 'Singles Stableford')
+            .map(fixture => fixture.name)`);
+
+    for (const name of fixtureNames) {
+        assert.match(name, /^Men's Singles Stableford \(.+\)$/,
+            'non-GOY Singles Stableford fixture must use the canonical date-based name: ' + name);
+    }
+
+    const augustDisplayName = run(sandbox,
+        `competitionDisplayName({
+            info: { name: "Captain Hilary's Prize Back 9 Holes" },
+            filename: "august.csv",
+            fixtureMatch: "Men's Singles Stableford (29 and 30 August)",
+            config: { isGOY: false }
+        })`);
+    assert.strictEqual(augustDisplayName, "Men's Singles Stableford (29 and 30 August)",
+        'mislabelled source exports should display the canonical fixture name');
+
+    const septemberDisplayName = run(sandbox,
+        `competitionDisplayName({
+            info: { name: "Men's Singles Stableford" },
+            filename: "september.csv",
+            fixtureMatch: "Men's Singles Stableford (26 and 27 September)",
+            config: { isGOY: false }
+        })`);
+    assert.strictEqual(septemberDisplayName, "Men's Singles Stableford (26 and 27 September)",
+        'generic source exports should display the canonical fixture name');
+
+    console.log('Test 9 passed: non-GOY Singles Stableford names are canonical and date-based.');
+}
+
+// ============================================================
+// Test 10: scorecard-only days from the same reviewed fixture merge
+// and display with the canonical fixture name and date range.
+// ============================================================
+{
+    const sandbox = makeSandbox();
+    const HEADER = 'Player,Hcp,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18';
+    const altDayScorecard = [
+        'Blainroe Golf Club', 'Competition Scorecards',
+        "Hole by Hole scores returned in the Men's Singles Stableford - Alt Day competition round played on 1 August 2026 at Blainroe (Blainroe Main)",
+        HEADER,
+        '"Murphy, Sean",12,5,4,4,5,5,4,4,3,4,4,4,4,4,4,3,4,3,5'
+    ].join('\n');
+    const sundayScorecard = [
+        'Blainroe Golf Club', 'Competition Scorecards',
+        "Hole by Hole scores returned in the Men's Singles Stableford competition round played on 2 August 2026 at Blainroe (Blainroe Main)",
+        HEADER,
+        '"Murphy, Sean",12,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,3,3'
+    ].join('\n');
+
+    loadCsv(sandbox, altDayScorecard, 'SinglesStableford-1st-August-2026-AltDay-Competition Scorecards.csv');
+    loadCsv(sandbox, sundayScorecard, 'SinglesStableford-2nd-August-2026-Sunday-Competition Scorecards.csv');
+
+    const visible = run(sandbox, 'appState.competitions.filter(comp => !comp.hidden)');
+    assert.strictEqual(visible.length, 1, 'the 1 and 2 August scorecards should merge into one loaded competition');
+    assert.strictEqual(visible[0].fixtureMatch, "Men's Singles Stableford (1 and 2 August)",
+        'the merged August competition should retain its canonical fixture match');
+
+    const displayName = run(sandbox, 'competitionDisplayName(appState.competitions.find(comp => !comp.hidden))');
+    const displayDate = run(sandbox, 'competitionDisplayDate(appState.competitions.find(comp => !comp.hidden))');
+    assert.strictEqual(displayName, "Men's Singles Stableford (1 and 2 August)");
+    assert.strictEqual(displayDate, 'Saturday 1 August 2026 & Sunday 2 August 2026');
+    const underlyingRounds = run(sandbox,
+        `appState.competitions.filter(comp => Object.prototype.hasOwnProperty.call(comp.scorecards, 'Murphy, Sean')).length`);
+    assert.strictEqual(underlyingRounds, 2, 'both underlying August rounds must remain stored separately');
+
+    console.log('Test 10 passed: scorecard-only fixture days merge and display canonically.');
+}
+
+// ============================================================
+// Test 11: the Collins Cup is a date-TBC GOY placeholder and is
+// excluded from Eclectic calculations.
+// ============================================================
+{
+    const sandbox = makeSandbox();
+    const match = run(sandbox,
+        `matchCompetitionToFixture(${JSON.stringify('Collins Cup Singles Matchplay')}, ${JSON.stringify('Final result')})`);
+    assert.ok(match, 'Collins Cup should resolve by keyword');
+    assert.strictEqual(match.isGOY, true, 'Collins Cup must count towards GOY');
+    assert.strictEqual(match.isEclectic, false, 'Collins Cup must not count towards Eclectic');
+
+    const calendarEntry = run(sandbox,
+        `getFixtureCalendar([]).find(fixture => fixture.name === 'Collins Cup (Singles Matchplay)')`);
+    assert.ok(calendarEntry, 'Collins Cup placeholder should appear in the fixture calendar');
+    assert.strictEqual(calendarEntry.dates.length, 0, 'Collins Cup date should remain TBC');
+    assert.strictEqual(calendarEntry.isPast, false, 'date-TBC Collins Cup must not be marked missed');
+    assert.strictEqual(calendarEntry.isCurrent, false, 'date-TBC Collins Cup must not be marked current');
+    assert.strictEqual(calendarEntry.isUpcoming, true, 'date-TBC Collins Cup should be upcoming');
+
+    const columnName = run(sandbox, `goyFixtureColumnName(
+        GOY_FIXTURES.competitions.find(fixture => fixture.name === 'Collins Cup (Singles Matchplay)')
+    )`);
+    assert.strictEqual(columnName, 'Collins Cup (Singles Matchplay)',
+        'GOY table should use the full Collins Cup placeholder name');
+    const goyHtml = run(sandbox, `renderGOYTable({ leaderboard: [], competitions: [] })`);
+    assert.ok(goyHtml.includes('TBC'),
+        'GOY table should show TBC for the Collins Cup placeholder date');
+
+    console.log('Test 11 passed: Collins Cup is a date-TBC GOY-only placeholder.');
+}
+
 console.log('\nAll standalone-Sunday / handicap-chronology regression assertions passed.');

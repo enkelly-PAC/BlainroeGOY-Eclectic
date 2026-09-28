@@ -29,7 +29,7 @@ const GOY_FIXTURES = {
             category: "Medal"
         },
         {
-            name: "Men's Singles Stableford (April)",
+            name: "Men's Singles Stableford (11 and 12 April)",
             keywords: ["singles stableford - 11", "singles stableford - 12"],
             dates: ["2026-04-11", "2026-04-12"],
             isGOY: false,
@@ -101,7 +101,7 @@ const GOY_FIXTURES = {
             category: "President's Prize"
         },
         {
-            name: "Men's Singles Stableford (May)",
+            name: "Men's Singles Stableford (31 May)",
             keywords: ["singles stableford - 31 may"],
             dates: ["2026-05-31"],
             isGOY: false,
@@ -191,7 +191,7 @@ const GOY_FIXTURES = {
             // array order whose dates include the parsed date wins, so this entry must
             // precede "Captain's Prize Final (GOY)" or its own standalone Sunday round
             // would be misclassified as the Captain's Prize (GOY, double points).
-            name: "Men's Singles Stableford (26 July, post-Captains)",
+            name: "Men's Singles Stableford (26 July)",
             keywords: ["singles stableford - 26 july (post captains)"],
             dates: ["2026-07-26"],
             isGOY: false,
@@ -219,7 +219,7 @@ const GOY_FIXTURES = {
             category: "Medal"
         },
         {
-            name: "Men's Singles Stableford (August)",
+            name: "Men's Singles Stableford (1 and 2 August)",
             // NOTE: the bare "singles stableford" keyword was removed (was
             // present here previously). Every standalone Sunday round shares
             // the exact same generic "Men's Singles Stableford" export name,
@@ -234,6 +234,7 @@ const GOY_FIXTURES = {
             isGOY: false,
             isEclectic: true,
             isCaptains: false,
+            identityByDateOnly: true,
             category: "Singles Stableford"
         },
         {
@@ -298,7 +299,7 @@ const GOY_FIXTURES = {
             category: "GOY Trophy"
         },
         {
-            name: "Men's Weekend Singles Stableford (19 and 20 September)",
+            name: "Men's Singles Stableford (19 and 20 September)",
             keywords: ["men's weekend - singles stableford"],
             dates: ["2026-09-19", "2026-09-20"],
             isGOY: false,
@@ -308,7 +309,7 @@ const GOY_FIXTURES = {
             category: "Singles Stableford"
         },
         {
-            name: "Men's Weekend Singles Stableford (26 and 27 September)",
+            name: "Men's Singles Stableford (26 and 27 September)",
             keywords: ["men's singles stableford - 26", "men's singles stableford - 27"],
             dates: ["2026-09-26", "2026-09-27"],
             isGOY: false,
@@ -325,6 +326,16 @@ const GOY_FIXTURES = {
             isEclectic: true,
             isCaptains: false,
             category: "Medal"
+        },
+        {
+            name: "Collins Cup (Singles Matchplay)",
+            keywords: ["collins cup"],
+            dates: [],
+            dateTbc: true,
+            isGOY: true,
+            isEclectic: false,
+            isCaptains: false,
+            category: "Matchplay"
         }
     ]
 };
@@ -459,10 +470,11 @@ function getFixtureCalendar(loadedCompetitions) {
     today.setHours(0, 0, 0, 0);
 
     return GOY_FIXTURES.competitions.map(fixture => {
-        const firstDate = new Date(fixture.dates[0]);
-        const lastDate = new Date(fixture.dates[fixture.dates.length - 1]);
-        const isPast = lastDate < today;
-        const isCurrent = firstDate <= today && lastDate >= today;
+        const hasDates = fixture.dates.length > 0;
+        const firstDate = hasDates ? new Date(fixture.dates[0]) : null;
+        const lastDate = hasDates ? new Date(fixture.dates[fixture.dates.length - 1]) : null;
+        const isPast = hasDates && lastDate < today;
+        const isCurrent = hasDates && firstDate <= today && lastDate >= today;
 
         // Check if this fixture has been uploaded (computed independently for GOY vs Eclectic)
         let uploadedForGOY = false;

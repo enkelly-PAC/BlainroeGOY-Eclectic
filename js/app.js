@@ -604,6 +604,15 @@ function processUploadedFile(text, filename) {
             existing.scorecards = { ...existing.scorecards, ...parsed.scorecards };
             existing.hasScorecard = true;
             if (!existing.info.date && parsed.info.date) existing.info.date = parsed.info.date;
+            if (typeof matchCompetitionToFixture === 'function') {
+                const fixtureMatch = matchCompetitionToFixture(existing.info.name, existing.info.date);
+                if (fixtureMatch) {
+                    existing.config.isGOY = fixtureMatch.isGOY;
+                    existing.config.isEclectic = (fixtureMatch.isEclectic !== undefined) ? !!fixtureMatch.isEclectic : true;
+                    existing.config.isCaptains = fixtureMatch.isCaptains;
+                    existing.fixtureMatch = fixtureMatch.fixture ? fixtureMatch.fixture.name : 'name-marker';
+                }
+            }
             return { merged: true, competition: existing, playerCount };
         }
         const comp = {
@@ -612,7 +621,23 @@ function processUploadedFile(text, filename) {
             scorecards: parsed.scorecards, handicaps: parsed.handicaps || {},
             config: { isGOY: false, isCaptains: false }
         };
+        if (typeof matchCompetitionToFixture === 'function') {
+            const fixtureMatch = matchCompetitionToFixture(parsed.info.name, parsed.info.date);
+            if (fixtureMatch) {
+                comp.config.isGOY = fixtureMatch.isGOY;
+                comp.config.isEclectic = (fixtureMatch.isEclectic !== undefined) ? !!fixtureMatch.isEclectic : true;
+                comp.config.isCaptains = fixtureMatch.isCaptains;
+                comp.fixtureMatch = fixtureMatch.fixture ? fixtureMatch.fixture.name : 'name-marker';
+            }
+        }
+        const fixtureSibling = appState.competitions.find(candidate =>
+            !candidate.hidden && sameFixtureIdentity(parsed.info, candidate.info)
+        );
         appState.competitions.push(comp);
+        if (fixtureSibling) {
+            foldCompetitionsIntoPrimary(fixtureSibling, [comp]);
+            return { merged: true, competition: fixtureSibling, playerCount };
+        }
         return { merged: false, competition: comp, playerCount };
 
     } else if (type === 'report') {
@@ -891,6 +916,21 @@ function getScoreCellStyle(diff) {
 
 // ============ TABLE RENDERING ============
 
+function goyFixtureColumnName(fixture) {
+    return fixture.name
+        .replace(/Men's\s*/gi, '')
+        .replace(/\s*\(GOY\)/gi, '')
+        .replace(/\s*to Men/gi, '')
+        .replace(/\s*& PGA Tankard/gi, '')
+        .replace(/Captain.*Prize/i, 'Captains Prize')
+        .replace(/Lady Captain.*Prize/i, 'Lady Capt Prize')
+        .replace(/Lady President.*Prize/i, 'Lady Pres Prize')
+        .replace(/Professional.*Prize/i, 'Pro/PGA')
+        .replace(/President.*Prize/i, 'Presidents Prize')
+        .replace(/C\.G\.\s*/i, '')
+        .trim();
+}
+
 function renderGOYTable(results) {
     if (!results) return '<p class="status-msg info">No GOY data. Upload Competition Report CSVs and mark them as GOY.</p>';
     const { leaderboard, competitions } = results;
@@ -910,23 +950,12 @@ function renderGOYTable(results) {
             return fixture.keywords.some(kw => name.includes(kw));
         });
         const dateStr = fixture.dates[fixture.dates.length - 1]; // Use last date (Sunday)
-        const dt = new Date(dateStr);
-        const day = dt.getDate();
+        const dt = dateStr ? new Date(dateStr) : null;
+        const day = dt ? dt.getDate() : null;
         const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-        const dateLabel = day + '-' + monthNames[dt.getMonth()];
+        const dateLabel = dt ? day + '-' + monthNames[dt.getMonth()] : 'TBC';
         // Short name for column
-        let shortName = fixture.name
-            .replace(/Men's\s*/gi, '')
-            .replace(/\s*\(GOY\)/gi, '')
-            .replace(/\s*to Men/gi, '')
-            .replace(/\s*& PGA Tankard/gi, '')
-            .replace(/Captain.*Prize/i, 'Captains Prize')
-            .replace(/Lady Captain.*Prize/i, 'Lady Capt Prize')
-            .replace(/Lady President.*Prize/i, 'Lady Pres Prize')
-            .replace(/Professional.*Prize/i, 'Pro/PGA')
-            .replace(/President.*Prize/i, 'Presidents Prize')
-            .replace(/C\.G\.\s*/i, '')
-            .trim();
+        const shortName = goyFixtureColumnName(fixture);
         return {
             eventNum: idx + 1,
             date: dateLabel,
@@ -1981,6 +2010,43 @@ function handleFiles(files) {
     });
 }
 
+function competitionDisplayName(comp) {
+    if (
+        comp &&
+        comp.config &&
+        comp.config.isGOY === false &&
+        comp.fixtureMatch &&
+        comp.fixtureMatch !== 'name-marker' &&
+        /^Men's Singles Stableford \(.+\)$/.test(comp.fixtureMatch)
+    ) {
+        return comp.fixtureMatch;
+    }
+    return (comp && comp.info && comp.info.name) || (comp && comp.filename) || '';
+}
+
+function competitionDisplayDate(comp) {
+    if (
+        comp &&
+        comp.config &&
+        comp.config.isGOY === false &&
+        comp.fixtureMatch &&
+        typeof GOY_FIXTURES !== 'undefined'
+    ) {
+        const fixture = GOY_FIXTURES.competitions.find(candidate => candidate.name === comp.fixtureMatch);
+        if (fixture && fixture.category === 'Singles Stableford' && fixture.dates.length) {
+            const weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            const months = ['January', 'February', 'March', 'April', 'May', 'June',
+                            'July', 'August', 'September', 'October', 'November', 'December'];
+            return fixture.dates.map(value => {
+                const date = new Date(value + 'T00:00:00');
+                const prefix = fixture.dates.length > 1 ? weekdays[date.getDay()] + ' ' : '';
+                return prefix + date.getDate() + ' ' + months[date.getMonth()] + ' ' + date.getFullYear();
+            }).join(' & ');
+        }
+    }
+    return (comp && comp.info && comp.info.date) || '-';
+}
+
 function renderCompetitionsTable() {
     const section = document.getElementById('competitions-section');
     const tbody = document.querySelector('#competitions-table tbody');
@@ -2040,8 +2106,8 @@ function renderCompetitionsTable() {
 
         const tr = document.createElement('tr');
         tr.innerHTML =
-            '<td style="text-align:left">' + escapeHtml(comp.info.name || comp.filename) + autoTag + '</td>' +
-            '<td>' + escapeHtml(comp.info.date || '-') + '</td>' +
+            '<td style="text-align:left">' + escapeHtml(competitionDisplayName(comp)) + autoTag + '</td>' +
+            '<td>' + escapeHtml(competitionDisplayDate(comp)) + '</td>' +
             '<td>' + playerCount + '</td>' +
             '<td><input type="checkbox" ' + (comp.config.isGOY ? 'checked' : '') + ' ' +
                 (!comp.hasReport ? 'disabled title="Needs Competition Report CSV"' : '') +
@@ -3157,10 +3223,10 @@ function renderFixtureTracker() {
         const goyBadge = ' <span class="goy-badge" title="Counts towards Golfer of the Year">GOY</span>';
         const captainBadge = f.isCaptains ? ' <span class="captain-badge" title="Double GOY points">×2</span>' : '';
         const displayName = (f.name || '').replace(/\s*\(GOY\)\s*/gi, '').trim();
-        const dateStr = f.dates.map(d => {
+        const dateStr = f.dates.length ? f.dates.map(d => {
             const dt = new Date(d);
             return dt.getDate() + '/' + (dt.getMonth() + 1);
-        }).join(', ');
+        }).join(', ') : 'Date TBC';
 
         html += '<div class="fixture-card ' + statusClass + '">' +
             '<span class="fixture-icon">' + icon + '</span>' +

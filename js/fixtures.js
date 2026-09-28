@@ -308,6 +308,16 @@ const GOY_FIXTURES = {
             category: "Singles Stableford"
         },
         {
+            name: "Men's Weekend Singles Stableford (26 and 27 September)",
+            keywords: ["men's singles stableford - 26", "men's singles stableford - 27"],
+            dates: ["2026-09-26", "2026-09-27"],
+            isGOY: false,
+            isEclectic: true,
+            isCaptains: false,
+            identityByDateOnly: true,
+            category: "Singles Stableford"
+        },
+        {
             name: "Men's October Medal",
             keywords: ["october medal"],
             dates: ["2026-09-26", "2026-09-27"],

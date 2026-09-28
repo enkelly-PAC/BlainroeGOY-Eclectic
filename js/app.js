@@ -733,15 +733,22 @@ function calculateGOY() {
             if (result.position < 1 || result.position > 20) continue;
             const pts = pointsTable[result.position - 1];
             const name = result.playerName;
-            if (!playerPoints[name]) playerPoints[name] = { total: 0, comps: {}, compCount: 0 };
+            if (!playerPoints[name]) playerPoints[name] = { total: 0, comps: {}, positions: {}, compCount: 0 };
             playerPoints[name].comps[comp.id] = pts;
+            playerPoints[name].positions[comp.id] = result.position;
             playerPoints[name].total += pts;
             playerPoints[name].compCount++;
         }
     }
 
     const leaderboard = Object.entries(playerPoints)
-        .map(([name, data]) => ({ playerName: name, total: data.total, comps: data.comps, compCount: data.compCount }))
+        .map(([name, data]) => ({
+            playerName: name,
+            total: data.total,
+            comps: data.comps,
+            positions: data.positions,
+            compCount: data.compCount
+        }))
         .sort((a, b) => b.total - a.total || a.playerName.localeCompare(b.playerName));
 
     let pos = 1;
@@ -961,7 +968,8 @@ function renderGOYTable(results) {
             date: dateLabel,
             name: shortName,
             compId: matchedComp ? matchedComp.id : null,
-            isCaptains: fixture.isCaptains
+            isCaptains: fixture.isCaptains,
+            isDateTbc: !dateStr
         };
     });
 
@@ -977,21 +985,21 @@ function renderGOYTable(results) {
     // Row 1: Event numbers
     html += '<tr class="goy-header-row"><th></th><th></th><th></th><th></th>';
     for (const col of fixtureColumns) {
-        html += '<th class="comp-col">' + col.eventNum + '</th>';
+        html += '<th class="comp-col' + (col.isDateTbc ? ' goy-tbc-col' : '') + '">' + col.eventNum + '</th>';
     }
     html += '</tr>';
 
     // Row 2: Dates
     html += '<tr class="goy-header-row"><th></th><th></th><th></th><th></th>';
     for (const col of fixtureColumns) {
-        html += '<th class="comp-col goy-date-header">' + col.date + '</th>';
+        html += '<th class="comp-col goy-date-header' + (col.isDateTbc ? ' goy-tbc-col' : '') + '">' + col.date + '</th>';
     }
     html += '</tr>';
 
     // Row 3: Competition names + column labels
     html += '<tr class="goy-header-row"><th>Rank</th><th>Points</th><th>Events</th><th>Player</th>';
     for (const col of fixtureColumns) {
-        html += '<th class="comp-col"><div class="comp-col-header" title="' + escapeHtml(col.name) + '">' + escapeHtml(col.name) + '</div></th>';
+        html += '<th class="comp-col' + (col.isDateTbc ? ' goy-tbc-col' : '') + '"><div class="comp-col-header" title="' + escapeHtml(col.name) + '">' + escapeHtml(col.name) + '</div></th>';
     }
     html += '</tr>';
 
@@ -1006,11 +1014,17 @@ function renderGOYTable(results) {
         html += '<td class="player-name">' + escapeHtml(displayName(player.playerName)) + '</td>';
         for (const col of fixtureColumns) {
             const pts = col.compId ? (player.comps[col.compId] || 0) : 0;
-            const scoredClass = pts > 0 ? ' goy-scored' : '';
-            const scoredTitle = pts > 0
-                ? ' title="Scored ' + pts + ' GoY ' + (pts === 1 ? 'point' : 'points') + '"'
+            const isWinner = !!(col.compId && player.positions && player.positions[col.compId] === 1);
+            const scoredClass = isWinner ? ' goy-winner' : (pts > 0 ? ' goy-scored' : '');
+            const scoredTitle = isWinner
+                ? ' title="Competition winner, ' + pts + ' GoY ' + (pts === 1 ? 'point' : 'points') + '"'
+                : pts > 0
+                    ? ' title="Scored ' + pts + ' GoY ' + (pts === 1 ? 'point' : 'points') + '"'
+                    : '';
+            const winnerIcon = isWinner
+                ? '<span class="goy-win-icon" aria-label="Competition winner">&#127942;</span> '
                 : '';
-            html += '<td class="comp-col' + scoredClass + '"' + scoredTitle + '>' + pts + '</td>';
+            html += '<td class="comp-col' + (col.isDateTbc ? ' goy-tbc-col' : '') + scoredClass + '"' + scoredTitle + '>' + winnerIcon + pts + '</td>';
         }
         html += '</tr>';
     }
@@ -3003,7 +3017,11 @@ function exportHTML(type) {
         '.player-name { text-align: left; font-weight: 600; }\n' +
         '.eclectic-title-bar { text-align: center; font-size: 1.2rem; font-weight: 700; color: #1a5e1a; margin-bottom: 1rem; }\n' +
         '.comp-col-header { writing-mode: vertical-lr; text-orientation: mixed; transform: rotate(180deg); font-size: 0.7rem; }\n' +
+        '.goy-tbc-col { min-width: 64px; }\n' +
+        '.goy-tbc-col .comp-col-header { writing-mode: horizontal-tb; transform: none; width: 64px; white-space: normal; line-height: 1.15; }\n' +
         '.goy-scored { background: rgba(76,175,80,0.14); color: #174f17; font-weight: 600; }\n' +
+        '.goy-winner { background: #2e7d32; color: #fff; font-weight: 700; }\n' +
+        '.goy-win-icon { font-size: 0.7em; }\n' +
         'footer { text-align: center; margin-top: 2rem; color: #888; font-size: 0.8rem; }\n' +
         (insights ? getInsightsExportCSS(false) + '\n' : '') +
         '</style>\n</head>\n<body>\n' +
@@ -3042,7 +3060,11 @@ function exportPDF(type) {
         '.player-name { text-align: left; font-weight: 600; }\n' +
         '.eclectic-title-bar { text-align: center; font-size: 1.1rem; font-weight: 700; color: #1a5e1a; margin-bottom: 0.75rem; }\n' +
         '.comp-col-header { writing-mode: vertical-lr; text-orientation: mixed; transform: rotate(180deg); font-size: 0.65rem; }\n' +
+        '.goy-tbc-col { min-width: 42px; }\n' +
+        '.goy-tbc-col .comp-col-header { writing-mode: horizontal-tb; transform: none; width: 42px; white-space: normal; line-height: 1.1; }\n' +
         '.goy-scored { background: rgba(76,175,80,0.14); color: #174f17; font-weight: 600; -webkit-print-color-adjust: exact; print-color-adjust: exact; }\n' +
+        '.goy-winner { background: #2e7d32; color: #fff; font-weight: 700; -webkit-print-color-adjust: exact; print-color-adjust: exact; }\n' +
+        '.goy-win-icon { font-size: 0.7em; }\n' +
         (goyPdf ? getGOYPdfCSS() : '') +
         'footer { text-align: center; margin-top: 1rem; color: #888; font-size: 0.7rem; }\n' +
         (insights ? getInsightsExportCSS(true) + '\n' : '') +
@@ -3067,6 +3089,8 @@ function getGOYPdfCSS() {
         '#goy-table th:nth-child(4), #goy-table td:nth-child(4) { width: 112px; text-align: left; }',
         '#goy-table .comp-col { width: 24px; min-width: 24px; }',
         '#goy-table .comp-col-header { writing-mode: vertical-lr; text-orientation: mixed; transform: rotate(180deg); max-height: 72px; font-size: 5.4pt; padding: 2px 1px; line-height: 1.05; white-space: normal; }',
+        '#goy-table .goy-tbc-col { width: 42px; min-width: 42px; }',
+        '#goy-table .goy-tbc-col .comp-col-header { writing-mode: horizontal-tb; transform: none; width: 42px; max-height: none; font-size: 5.2pt; line-height: 1.1; }',
         '#goy-table .goy-pdf-event-number { font-weight: 800; font-size: 6pt; }',
         '#goy-table .goy-pdf-event-name { font-weight: 700; }',
         '#goy-table .goy-date-header { color: #fff; font-size: 6.2pt; font-weight: 700; }',

@@ -510,6 +510,8 @@ function loadCsv(sandbox, text, filename) {
     const goyHtml = run(sandbox, `renderGOYTable({ leaderboard: [], competitions: [] })`);
     assert.ok(goyHtml.includes('TBC'),
         'GOY table should show TBC for the Collins Cup placeholder date');
+    assert.ok(goyHtml.includes('class="comp-col goy-tbc-col"><div class="comp-col-header"'),
+        'date-TBC fixture should use the wider horizontal header treatment');
 
     console.log('Test 11 passed: Collins Cup is a date-TBC GOY-only placeholder.');
 }
@@ -564,24 +566,59 @@ function loadCsv(sandbox, text, filename) {
     const results = {
         leaderboard: [{
             playerName: 'Test Player',
-            total: 14,
-            compCount: 1,
+            total: 39,
+            compCount: 2,
             position: 1,
-            comps: { march: 14 }
+            comps: { march: 20, april: 19 },
+            positions: { march: 1, april: 2 }
         }],
-        competitions: [{
-            id: 'march',
-            info: { name: "Men's March Medal (GOY)" }
-        }]
+        competitions: [
+            {
+                id: 'march',
+                info: { name: "Men's March Medal (GOY)" }
+            },
+            {
+                id: 'april',
+                info: { name: "Men's April Medal" }
+            }
+        ]
     };
     const html = run(sandbox, `renderGOYTable(${JSON.stringify(results)})`);
 
-    assert.ok(html.includes('class="comp-col goy-scored" title="Scored 14 GoY points">14</td>'),
-        'a non-zero GoY result should receive the scoring highlight and tooltip');
+    assert.ok(html.includes('class="comp-col goy-winner" title="Competition winner, 20 GoY points">'),
+        'a competition winner should receive the winner highlight based on finishing position');
+    assert.ok(html.includes('aria-label="Competition winner">&#127942;</span> 20</td>'),
+        'a competition winner should display the trophy marker');
+    assert.ok(html.includes('class="comp-col goy-scored" title="Scored 19 GoY points">19</td>'),
+        'a non-winning points result should receive the standard scoring highlight');
     assert.ok(html.includes('class="comp-col">0</td>'),
         'zero-point GoY cells should remain neutral');
 
-    console.log('Test 13 passed: GoY scoring cells are subtly highlighted.');
+    console.log('Test 13 passed: GoY winners and other scoring cells have distinct highlights.');
+}
+
+// ============================================================
+// Test 14: calculateGOY retains finishing positions so the real
+// rendered leaderboard can identify winners independently of points.
+// ============================================================
+{
+    const sandbox = makeSandbox();
+    run(sandbox, `
+        appState.competitions = [{
+            id: 'captains',
+            config: { isGOY: true, isCaptains: true },
+            hasReport: true,
+            results: [{ playerName: 'Captain Winner', position: 1 }]
+        }];
+    `);
+    const results = run(sandbox, 'calculateGOY()');
+
+    assert.strictEqual(results.leaderboard[0].comps.captains, 40,
+        'Captain winner should retain double points');
+    assert.strictEqual(results.leaderboard[0].positions.captains, 1,
+        'calculateGOY should retain the recorded finishing position');
+
+    console.log('Test 14 passed: real GOY results retain positions for winner highlighting.');
 }
 
 console.log('\nAll standalone-Sunday / handicap-chronology regression assertions passed.');

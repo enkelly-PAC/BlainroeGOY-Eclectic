@@ -1006,7 +1006,11 @@ function renderGOYTable(results) {
         html += '<td class="player-name">' + escapeHtml(displayName(player.playerName)) + '</td>';
         for (const col of fixtureColumns) {
             const pts = col.compId ? (player.comps[col.compId] || 0) : 0;
-            html += '<td class="comp-col">' + pts + '</td>';
+            const scoredClass = pts > 0 ? ' goy-scored' : '';
+            const scoredTitle = pts > 0
+                ? ' title="Scored ' + pts + ' GoY ' + (pts === 1 ? 'point' : 'points') + '"'
+                : '';
+            html += '<td class="comp-col' + scoredClass + '"' + scoredTitle + '>' + pts + '</td>';
         }
         html += '</tr>';
     }
@@ -2999,6 +3003,7 @@ function exportHTML(type) {
         '.player-name { text-align: left; font-weight: 600; }\n' +
         '.eclectic-title-bar { text-align: center; font-size: 1.2rem; font-weight: 700; color: #1a5e1a; margin-bottom: 1rem; }\n' +
         '.comp-col-header { writing-mode: vertical-lr; text-orientation: mixed; transform: rotate(180deg); font-size: 0.7rem; }\n' +
+        '.goy-scored { background: rgba(76,175,80,0.14); color: #174f17; font-weight: 600; }\n' +
         'footer { text-align: center; margin-top: 2rem; color: #888; font-size: 0.8rem; }\n' +
         (insights ? getInsightsExportCSS(false) + '\n' : '') +
         '</style>\n</head>\n<body>\n' +
@@ -3037,6 +3042,7 @@ function exportPDF(type) {
         '.player-name { text-align: left; font-weight: 600; }\n' +
         '.eclectic-title-bar { text-align: center; font-size: 1.1rem; font-weight: 700; color: #1a5e1a; margin-bottom: 0.75rem; }\n' +
         '.comp-col-header { writing-mode: vertical-lr; text-orientation: mixed; transform: rotate(180deg); font-size: 0.65rem; }\n' +
+        '.goy-scored { background: rgba(76,175,80,0.14); color: #174f17; font-weight: 600; -webkit-print-color-adjust: exact; print-color-adjust: exact; }\n' +
         (goyPdf ? getGOYPdfCSS() : '') +
         'footer { text-align: center; margin-top: 1rem; color: #888; font-size: 0.7rem; }\n' +
         (insights ? getInsightsExportCSS(true) + '\n' : '') +

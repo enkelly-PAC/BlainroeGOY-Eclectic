@@ -555,4 +555,33 @@ function loadCsv(sandbox, text, filename) {
     console.log('Test 12 passed: Nett table displays nett holes with gross context.');
 }
 
+// ============================================================
+// Test 13: non-zero GoY event cells receive subtle scoring emphasis,
+// while zero-point cells remain neutral.
+// ============================================================
+{
+    const sandbox = makeSandbox();
+    const results = {
+        leaderboard: [{
+            playerName: 'Test Player',
+            total: 14,
+            compCount: 1,
+            position: 1,
+            comps: { march: 14 }
+        }],
+        competitions: [{
+            id: 'march',
+            info: { name: "Men's March Medal (GOY)" }
+        }]
+    };
+    const html = run(sandbox, `renderGOYTable(${JSON.stringify(results)})`);
+
+    assert.ok(html.includes('class="comp-col goy-scored" title="Scored 14 GoY points">14</td>'),
+        'a non-zero GoY result should receive the scoring highlight and tooltip');
+    assert.ok(html.includes('class="comp-col">0</td>'),
+        'zero-point GoY cells should remain neutral');
+
+    console.log('Test 13 passed: GoY scoring cells are subtly highlighted.');
+}
+
 console.log('\nAll standalone-Sunday / handicap-chronology regression assertions passed.');

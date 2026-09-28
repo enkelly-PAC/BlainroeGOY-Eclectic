@@ -370,6 +370,11 @@ footer {
 }
 
 .comp-col { min-width: 40px; text-align: center; }
+.goy-scored {
+    background: rgba(76, 175, 80, 0.14);
+    color: #174f17;
+    font-weight: 600;
+}
 .comp-col-header {
     writing-mode: vertical-lr;
     text-orientation: mixed;

@@ -382,7 +382,7 @@ function loadCsv(sandbox, text, filename) {
 
 // ============================================================
 // Test 8: the 26 and 27 September weekend fixture is tracked as
-// Eclectic-only, while the October Medal keyword still takes priority.
+// Eclectic-only without sharing dates with the October Medal.
 // ============================================================
 {
     const sandbox = makeSandbox();
@@ -394,12 +394,14 @@ function loadCsv(sandbox, text, filename) {
     assert.strictEqual(stablefordMatch.isCaptains, false, '26 and 27 September weekend must not be flagged as Captains');
 
     const octoberMedalMatch = run(sandbox,
-        `matchCompetitionToFixture(${JSON.stringify("Men's October Medal")}, ${JSON.stringify('Saturday 26 September 2026 and Sunday 27 September 2026')})`);
+        `matchCompetitionToFixture(${JSON.stringify("Men's October Medal")}, ${JSON.stringify('Saturday 3 October 2026 and Sunday 4 October 2026')})`);
     assert.ok(octoberMedalMatch, "Men's October Medal should resolve to a fixture");
     assert.strictEqual(octoberMedalMatch.isGOY, true, "Men's October Medal must count towards GOY");
     assert.strictEqual(octoberMedalMatch.isEclectic, true, "Men's October Medal must count towards Eclectic");
+    assert.notStrictEqual(stablefordMatch.fixture, octoberMedalMatch.fixture,
+        'the September Stableford and October Medal must resolve to different fixtures');
 
-    console.log('Test 8 passed: 26 and 27 September is Eclectic-only unless the October Medal keyword matches.');
+    console.log('Test 8 passed: 26 and 27 September is Eclectic-only and does not duplicate the October Medal dates.');
 }
 
 console.log('\nAll standalone-Sunday / handicap-chronology regression assertions passed.');

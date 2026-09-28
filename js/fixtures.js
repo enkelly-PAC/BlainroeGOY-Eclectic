@@ -320,7 +320,7 @@ const GOY_FIXTURES = {
         {
             name: "Men's October Medal",
             keywords: ["october medal"],
-            dates: ["2026-09-26", "2026-09-27"],
+            dates: ["2026-10-03", "2026-10-04"],
             isGOY: true,
             isEclectic: true,
             isCaptains: false,

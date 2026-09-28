@@ -514,4 +514,45 @@ function loadCsv(sandbox, text, filename) {
     console.log('Test 11 passed: Collins Cup is a date-TBC GOY-only placeholder.');
 }
 
+// ============================================================
+// Test 12: the Nett table displays hole-level nett scores and nett
+// subtotals, while retaining gross context in tooltips and summary.
+// ============================================================
+{
+    const sandbox = makeSandbox();
+    const scores = new Array(18).fill(4);
+    const player = {
+        name: 'Test Player',
+        rounds: 3,
+        scores,
+        gross: 72,
+        handicap: 18,
+        handicapDisplay: '18',
+        net: 54,
+        back9Net: 27,
+        back6Net: 18,
+        back3Net: 9,
+        lastHoleNet: 3
+    };
+    const html = run(sandbox,
+        `renderEclecticNettTable({ year: '2026', players: [${JSON.stringify(player)}] })`);
+
+    assert.ok(html.includes('Hole scores are nett'),
+        'Nett table should explain that hole values are nett');
+    assert.ok(html.includes('title="Gross 4, 1 handicap stroke, Nett 3"'),
+        'Nett hole cells should expose gross score and stroke allowance');
+    assert.ok(html.includes('>3</td>'),
+        'Nett hole cells should display the nett score');
+    assert.ok(html.includes('<td class="total-cell">27</td>'),
+        'Out and In subtotals should be nett totals');
+    assert.ok(html.includes('<td class="total-cell">72</td>'),
+        'The Gross summary column should remain visible');
+    assert.ok(html.includes('<td>18</td>'),
+        'The handicap summary column should remain visible');
+    assert.ok(html.includes('<td class="total-cell">54</td>'),
+        'The Net summary column should remain visible');
+
+    console.log('Test 12 passed: Nett table displays nett holes with gross context.');
+}
+
 console.log('\nAll standalone-Sunday / handicap-chronology regression assertions passed.');

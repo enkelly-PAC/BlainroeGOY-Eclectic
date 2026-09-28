@@ -1146,6 +1146,7 @@ function renderEclecticNettTable(data) {
     const year = data.year || new Date().getFullYear();
 
     let html = '<div class="eclectic-title-bar">Captain\'s Eclectic Cup (Nett) ' + year + ' — Current Standings</div>';
+    html += '<p class="help-text" style="margin:0 0 0.75rem;">Hole scores are nett, calculated from the eclectic gross card using the latest playing handicap and official stroke indexes. Hover or tap a hole to see its gross score and stroke allowance.</p>';
 
     html += '<table class="eclectic-table"><thead>';
 
@@ -1207,15 +1208,18 @@ function renderEclecticNettTable(data) {
 
         let outSum = 0, inSum = 0;
         for (let h = 0; h < 18; h++) {
-            const s = p.scores[h];
-            if (s === null) {
+            const grossScore = p.scores[h];
+            if (grossScore === null) {
                 html += '<td>-</td>';
             } else {
-                if (h < 9) outSum += s; else inSum += s;
-                // Color based on gross score vs par (same as gross table)
-                const diff = s - COURSE.par[h];
+                const strokes = getStrokesOnHole(p.handicap, h);
+                const nettScore = grossScore - strokes;
+                if (h < 9) outSum += nettScore; else inSum += nettScore;
+                const diff = nettScore - COURSE.par[h];
                 const style = getScoreCellStyle(diff);
-                html += '<td' + (style ? ' style="' + style + '"' : '') + '>' + s + '</td>';
+                const strokeLabel = strokes === 1 ? '1 handicap stroke' : strokes + ' handicap strokes';
+                const tooltip = 'Gross ' + grossScore + ', ' + strokeLabel + ', Nett ' + nettScore;
+                html += '<td title="' + tooltip + '"' + (style ? ' style="' + style + '"' : '') + '>' + nettScore + '</td>';
             }
             if (h === 8) {
                 html += '<td class="total-cell">' + outSum + '</td>';

@@ -40,10 +40,10 @@ def extract_text(pdf: Path) -> str:
 
 # Parse the GOY table. Lines like:
 #   "1 55 5 Terence Ryan 14 0 12 3 19 0 7 0 0 0 0 0 0 0 0 0 0"
-# or in 17-event format. Rank may repeat for ties.
+# The score list grows as new GoY events are added. Rank may repeat for ties.
 GOY_ROW_RE = re.compile(
     r'^\s*(\d+)\s+(\d+)\s+(\d+)\s+([A-Z][^\d]+?)\s+'
-    r'(\d+(?:\s+\d+){16})\s*$'
+    r'(\d+(?:\s+\d+){16,})\s*$'
 )
 
 
@@ -51,12 +51,12 @@ def parse_goy(text: str) -> dict:
     """Parse Golfer of the Year leaderboard text.
 
     Returns: { 'leader': name|None, 'players': [{ 'rank', 'points', 'events',
-               'name', 'scores': [int*17] }] }
+               'name', 'scores': [int] }] }
     """
     players: list[dict] = []
     leader = None
     for line in text.splitlines():
-        line = line.strip()
+        line = line.replace('🏆', '').strip()
         if not line:
             continue
         m_leader = re.search(r'Current Leader[: ]+([^\n]+)$', line)

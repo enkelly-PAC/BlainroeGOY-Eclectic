@@ -376,8 +376,29 @@ function loadCsv(sandbox, text, filename) {
     assert.strictEqual(match.isGOY, false, '19 and 20 September weekend must not count towards GOY');
     assert.strictEqual(match.isEclectic, true, '19 and 20 September weekend must count towards Eclectic');
     assert.strictEqual(match.isCaptains, false, '19 and 20 September weekend must not be flagged as Captains');
+    assert.strictEqual(match.fixture.name, "Men's Singles Stableford (19 and 20 September)");
 
     console.log('Test 7 passed: 19 and 20 September weekend is tracked as Eclectic-only.');
+}
+
+{
+    const sandbox = makeSandbox();
+    const cases = [
+        ["Men's Weekend - Singles Stableford - 10th / 11th October 2026",
+            'Saturday 10 October 2026 & Sunday 11 October 2026'],
+        ["Men's Singles Stableford - Alt Day", '10 October 2026'],
+        ["Men's Singles Stableford", '11 October 2026']
+    ];
+    for (const [name, date] of cases) {
+        const match = run(sandbox,
+            `matchCompetitionToFixture(${JSON.stringify(name)}, ${JSON.stringify(date)})`);
+        assert.ok(match, 'October Stableford export should resolve to a fixture');
+        assert.strictEqual(match.fixture.name, "Men's Singles Stableford (10 and 11 October)",
+            'October exports must not match the September weekend fixture');
+        assert.strictEqual(match.isGOY, false, 'October Stableford must not add GoY points');
+        assert.strictEqual(match.isEclectic, true, 'October Stableford must count towards Eclectic');
+    }
+    console.log('October Stableford report and both scorecards match their own Eclectic-only fixture.');
 }
 
 // ============================================================

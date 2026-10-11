@@ -300,7 +300,7 @@ const GOY_FIXTURES = {
         },
         {
             name: "Men's Singles Stableford (19 and 20 September)",
-            keywords: ["men's weekend - singles stableford"],
+            keywords: [],
             dates: ["2026-09-19", "2026-09-20"],
             isGOY: false,
             isEclectic: true,
@@ -326,6 +326,16 @@ const GOY_FIXTURES = {
             isEclectic: true,
             isCaptains: false,
             category: "Medal"
+        },
+        {
+            name: "Men's Singles Stableford (10 and 11 October)",
+            keywords: [],
+            dates: ["2026-10-10", "2026-10-11"],
+            isGOY: false,
+            isEclectic: true,
+            isCaptains: false,
+            identityByDateOnly: true,
+            category: "Singles Stableford"
         },
         {
             name: "Collins Cup (Singles Matchplay)",

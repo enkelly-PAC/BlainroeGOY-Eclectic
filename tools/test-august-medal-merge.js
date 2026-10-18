@@ -101,6 +101,20 @@ function loadCsv(text, filename) {
     return run(`processUploadedFile(${JSON.stringify(text)}, ${JSON.stringify(filename)})`);
 }
 
+for (const [name, date] of [
+    ["Men's November Medal", "Sunday 18 October 2026"],
+    ["November Medal Alt Day", "Saturday 17 October 2026"],
+    ["November Men's Medal Strokes - Blue", "Sunday 18 October 2026"],
+    ["01. Men's Medal Strokes - Blue (WHS)", "Sunday 18 October 2026"]
+]) {
+    const match = sandbox.matchCompetitionToFixture(name, date);
+    assert.ok(match, name + ' should match the November Medal fixture');
+    assert.strictEqual(match.fixture.name, "Men's November Medal");
+    assert.strictEqual(match.isGOY, true, name + ' should qualify for GOY');
+    assert.strictEqual(match.isEclectic, true, name + ' should qualify for Eclectic');
+    assert.strictEqual(match.isCaptains, false, name + ' should use normal GOY points');
+}
+
 // ---- Synthetic CSV fixtures (dates match GOY_FIXTURES "Men's August Medal": 2026-08-08/09) ----
 
 const HEADER = 'Player,Hcp,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18';
@@ -310,4 +324,3 @@ assert.strictEqual(competitionsTbody.children.length, 2,
 
 console.log('All August Medal merge regression assertions passed.');
 console.log('Visible competitions after load: ' + visible.map(c => c.info.name + ' [' + c.info.date + ']').join(' | '));
-

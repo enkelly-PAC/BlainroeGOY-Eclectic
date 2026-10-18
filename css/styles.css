@@ -93,6 +93,12 @@ main {
 /* ============ TABLES ============ */
 .table-wrapper { overflow-x: auto; }
 
+#goy-table-container {
+    max-height: 65vh;
+    overflow-x: scroll;
+    overflow-y: auto;
+}
+
 table {
     width: 100%;
     border-collapse: collapse;
@@ -333,6 +339,7 @@ footer {
 
 /* ============ PRINT STYLES ============ */
 @media print {
+    #goy-table-container { max-height: none; overflow: visible; }
     header, .upload-area, .actions-bar, .export-buttons, .tabs, footer,
     #upload-section, #competitions-section { display: none !important; }
     .card { box-shadow: none; padding: 0; }

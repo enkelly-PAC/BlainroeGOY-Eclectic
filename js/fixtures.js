@@ -338,6 +338,15 @@ const GOY_FIXTURES = {
             category: "Singles Stableford"
         },
         {
+            name: "Men's November Medal",
+            keywords: ["november medal", "november men's medal"],
+            dates: ["2026-10-17", "2026-10-18"],
+            isGOY: true,
+            isEclectic: true,
+            isCaptains: false,
+            category: "Medal"
+        },
+        {
             name: "Collins Cup (Singles Matchplay)",
             keywords: ["collins cup"],
             dates: [],
@@ -432,9 +441,9 @@ function matchCompetitionToFixture(compName, compDateStr) {
         }
     }
 
-    // Strategy 3: All medals from March to October are GOY-qualifying
+    // Strategy 3: All medals from March to November are GOY-qualifying
     if (nameLower.includes('medal')) {
-        const nonGoyMedalMonths = ['november', 'december', 'january', 'february'];
+        const nonGoyMedalMonths = ['december', 'january', 'february'];
         const isExcluded = nonGoyMedalMonths.some(m => nameLower.includes(m));
         if (!isExcluded) {
             return { isGOY: true, isEclectic: true, isCaptains: false, fixture: null };

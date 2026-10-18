@@ -33,7 +33,7 @@ $ErrorActionPreference = 'Stop'
 
 $RepoRoot   = Split-Path -Parent $PSScriptRoot
 $ToolsDir   = $PSScriptRoot
-$DesktopRoot = 'C:\Users\enkelly\OneDrive - Microsoft\Desktop\GoY_Ecclectic'
+$DesktopRoot = 'C:\Users\enkelly\OneDrive\GoY_Ecclectic'
 $ResultsDir = Join-Path $DesktopRoot 'Results'
 $StateFile  = Join-Path $ToolsDir '.last-ingest.json'
 
@@ -136,6 +136,6 @@ Write-Host '  1. Wait ~1 to 2 minutes for GitHub Pages to redeploy.'
 Write-Host '  2. Open https://enkelly-pac.github.io/BlainroeGOY-Eclectic/'
 Write-Host '  3. Export the 5 PDFs (Captain''s Gross, Captain''s Nett, GoY,'
 Write-Host '     Gross Insights, Nett Insights) and save them into:'
-Write-Host '       C:\Users\enkelly\OneDrive - Microsoft\Desktop\GoY_Ecclectic\PublishResults\'
+Write-Host '       C:\Users\enkelly\OneDrive\GoY_Ecclectic\PublishResults\'
 Write-Host '  4. Then run:'
 Write-Host "       .\tools\Step2-PublishNewsletter.ps1 -EventName 'July Medal'" -ForegroundColor Green

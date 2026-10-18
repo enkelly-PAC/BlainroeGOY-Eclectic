@@ -48,7 +48,7 @@ $ErrorActionPreference = 'Stop'
 
 $RepoRoot     = Split-Path -Parent $PSScriptRoot
 $ToolsDir     = $PSScriptRoot
-$DesktopRoot  = 'C:\Users\enkelly\OneDrive - Microsoft\Desktop\GoY_Ecclectic'
+$DesktopRoot  = 'C:\Users\enkelly\OneDrive\GoY_Ecclectic'
 $PublishDir   = Join-Path $DesktopRoot 'PublishResults'
 $DraftOutDir  = 'C:\Users\enkelly\OneDrive - Microsoft\AI Strategy'
 $StateFile    = Join-Path $ToolsDir '.last-ingest.json'

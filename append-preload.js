@@ -56,8 +56,8 @@ console.log(`Found ${entries.length} existing entries in preloaded data`);
 
 // ============ READ RESULTS FOLDER ============
 
-const resultsPath = path.join('C:', 'Users', 'enkelly', 'OneDrive - Microsoft', 'Desktop', 'GoY_Ecclectic', 'Results');
-const scratchPath = path.join('C:', 'Users', 'enkelly', 'OneDrive - Microsoft', 'Desktop', 'GoY_Ecclectic', 'Scratch');
+const resultsPath = path.join('C:', 'Users', 'enkelly', 'OneDrive', 'GoY_Ecclectic', 'Results');
+const scratchPath = path.join('C:', 'Users', 'enkelly', 'OneDrive', 'GoY_Ecclectic', 'Scratch');
 
 const resultsCsvs = fs.readdirSync(resultsPath)
   .filter(f => f.endsWith('.csv'))

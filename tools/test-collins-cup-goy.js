@@ -50,6 +50,12 @@ const after = json('calculateGOY()');
 const awards = json('PRELOADED_GOY_COMPETITIONS[0].results');
 const baseline = new Map(before.leaderboard.map(p => [p.playerName, p]));
 const expectedAwards = new Map(awards.map(p => [p.playerName, p.goyPoints]));
+const pointsByPosition = new Map([[1, 20], [2, 19], [3, 18], [5, 15], [9, 9], [17, 1]]);
+assert.strictEqual(awards.length, 32);
+for (const award of awards) {
+    assert(Number.isInteger(award.goyPoints), award.playerName);
+    assert.strictEqual(award.goyPoints, pointsByPosition.get(award.position), award.playerName);
+}
 
 for (const player of after.leaderboard) {
     const previous = baseline.get(player.playerName);
@@ -63,12 +69,14 @@ for (const player of after.leaderboard) {
     }
 }
 assert.strictEqual(after.leaderboard.reduce((sum, p) => sum + p.total, 0)
-    - before.leaderboard.reduce((sum, p) => sum + p.total, 0), 210);
+    - before.leaderboard.reduce((sum, p) => sum + p.total, 0), 223);
 assert.deepStrictEqual(json('calculateEclecticFromScorecards()'), eclecticBefore);
 const rendered = run('renderGOYTable(calculateGOY())');
 assert(rendered.includes('Competition winner, 20 GoY points'));
-assert(rendered.includes('Scored 17.5 GoY points'));
-assert(rendered.includes('Scored 0.625 GoY points'));
+assert(rendered.includes('Scored 18 GoY points'));
+assert(rendered.includes('Scored 1 GoY point'));
+assert(!rendered.includes('17.5'));
+assert(!rendered.includes('0.625'));
 assert(!rendered.includes('TBC'));
 
 // A returning browser must refresh the official awards, not duplicate them
@@ -80,7 +88,10 @@ run(`
         config: { isGOY: false, isEclectic: false, isCaptains: false },
         hasReport: false, hasScorecard: false, results: [], scorecards: {}, handicaps: {}
     });
-    appState.competitions.find(c => c.id === 'collins_cup_2026').results[0].goyPoints = 999;
+    for (const result of appState.competitions.find(c => c.id === 'collins_cup_2026').results) {
+        const oldPoints = { 1: 20, 2: 19, 3: 17.5, 5: 14.5, 9: 8.5, 17: 0.625 };
+        result.goyPoints = oldPoints[result.position];
+    }
     saveToStorage();
     appState.competitions = [];
     initUI = () => {};
@@ -99,7 +110,7 @@ assert.strictEqual(run('appState.competitions.find(c => c.id === "collins_cup_20
 assert.deepStrictEqual(json('calculateGOY()'), after);
 assert.deepStrictEqual(json('calculateEclecticFromScorecards()'), eclecticBefore);
 
-// Explicit fractional awards remain valid past 20th place; the normal and
+// Explicit shared awards remain valid past 20th place; the normal and
 // Captain's Prize tables still exclude players outside their top 20.
 run(`
     appState.competitions = [{
@@ -108,7 +119,7 @@ run(`
             { playerName: 'Normal winner', position: 1 },
             { playerName: 'Normal twentieth', position: 20 },
             { playerName: 'Outside top twenty', position: 21 },
-            { playerName: 'Shared cutoff', position: 32, goyPoints: 0.625 }
+            { playerName: 'Shared cutoff', position: 32, goyPoints: 1 }
         ]
     }, {
         id: 'captains', config: { isGOY: true, isCaptains: true }, hasReport: true,
@@ -118,8 +129,8 @@ run(`
 const edgePlayers = new Map(json('calculateGOY().leaderboard').map(p => [p.playerName, p.total]));
 assert.strictEqual(edgePlayers.get('Normal winner'), 20);
 assert.strictEqual(edgePlayers.get('Normal twentieth'), 1);
-assert.strictEqual(edgePlayers.get('Shared cutoff'), 0.625);
+assert.strictEqual(edgePlayers.get('Shared cutoff'), 1);
 assert.strictEqual(edgePlayers.get('Captain winner'), 40);
 assert(!edgePlayers.has('Outside top twenty'));
-console.log('PASS: Collins Cup fractional awards, unchanged other events and Eclectic, cached refresh, and top-20 regression.');
+console.log('PASS: Collins Cup whole-point awards, unchanged other events and Eclectic, fractional-cache migration, and top-20 regression.');
 console.log('Updated GOY leaders:', after.leaderboard.slice(0, 5).map(p => `${p.playerName}: ${p.total}`).join('; '));

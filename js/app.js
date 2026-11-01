@@ -730,8 +730,11 @@ function calculateGOY() {
     for (const comp of goyComps) {
         const pointsTable = comp.config.isCaptains ? GOY_POINTS_CAPTAINS : GOY_POINTS_NORMAL;
         for (const result of comp.results) {
-            if (result.position < 1 || result.position > 20) continue;
-            const pts = pointsTable[result.position - 1];
+            if (!Number.isInteger(result.position) || result.position < 1) continue;
+            const pts = result.goyPoints !== undefined
+                ? result.goyPoints
+                : pointsTable[result.position - 1];
+            if (!Number.isFinite(pts) || pts <= 0) continue;
             const name = result.playerName;
             if (!playerPoints[name]) playerPoints[name] = { total: 0, comps: {}, positions: {}, compCount: 0 };
             playerPoints[name].comps[comp.id] = pts;
@@ -3324,6 +3327,16 @@ function renderEclecticTracker() {
 
 // ============ INITIALIZATION ============
 
+function loadPreloadedGOYCompetitions() {
+    if (typeof PRELOADED_GOY_COMPETITIONS === 'undefined') return;
+    for (const comp of PRELOADED_GOY_COMPETITIONS) {
+        // Refresh official awards without clearing unrelated cached uploads.
+        appState.competitions = appState.competitions.filter(c =>
+            c.id !== comp.id && c.fixtureMatch !== comp.fixtureMatch);
+        appState.competitions.push(JSON.parse(JSON.stringify(comp)));
+    }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     initUI();
     loadPalsFromStorage();
@@ -3344,14 +3357,15 @@ document.addEventListener('DOMContentLoaded', () => {
         // Clear stale localStorage when preloaded data has been updated
         localStorage.removeItem(STORAGE_KEY);
     }
-    if (!preloadedDataChanged && loadFromStorage()) {
-        renderCompetitionsTable();
-        generateTables();
-    } else if (hasPreloaded) {
+    const loadedFromStorage = !preloadedDataChanged && loadFromStorage();
+    if (!loadedFromStorage && hasPreloaded) {
         // Auto-load baked-in data when no localStorage data exists or data was refreshed
         for (const file of PRELOADED_CSV_FILES) {
             processUploadedFile(file.content, file.filename);
         }
+    }
+    loadPreloadedGOYCompetitions();
+    if (loadedFromStorage || hasPreloaded || appState.competitions.length > 0) {
         renderCompetitionsTable();
         generateTables();
         saveToStorage();

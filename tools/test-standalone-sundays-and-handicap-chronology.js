@@ -504,8 +504,8 @@ function loadCsv(sandbox, text, filename) {
 }
 
 // ============================================================
-// Test 11: the Collins Cup is a date-TBC GOY placeholder and is
-// excluded from Eclectic calculations.
+// Test 11: Collins Cup uses its final deadline, remains GOY-only,
+// and cannot claim unrelated strokeplay on the same date.
 // ============================================================
 {
     const sandbox = makeSandbox();
@@ -517,24 +517,22 @@ function loadCsv(sandbox, text, filename) {
 
     const calendarEntry = run(sandbox,
         `getFixtureCalendar([]).find(fixture => fixture.name === 'Collins Cup (Singles Matchplay)')`);
-    assert.ok(calendarEntry, 'Collins Cup placeholder should appear in the fixture calendar');
-    assert.strictEqual(calendarEntry.dates.length, 0, 'Collins Cup date should remain TBC');
-    assert.strictEqual(calendarEntry.isPast, false, 'date-TBC Collins Cup must not be marked missed');
-    assert.strictEqual(calendarEntry.isCurrent, false, 'date-TBC Collins Cup must not be marked current');
-    assert.strictEqual(calendarEntry.isUpcoming, true, 'date-TBC Collins Cup should be upcoming');
+    assert.ok(calendarEntry, 'Collins Cup should appear in the fixture calendar');
+    assert.strictEqual(calendarEntry.dates.join(','), '2026-10-25');
+    assert.strictEqual(run(sandbox,
+        `matchCompetitionToFixture("Men's Singles Stableford", "25 October 2026")`), null);
 
     const columnName = run(sandbox, `goyFixtureColumnName(
         GOY_FIXTURES.competitions.find(fixture => fixture.name === 'Collins Cup (Singles Matchplay)')
     )`);
     assert.strictEqual(columnName, 'Collins Cup (Singles Matchplay)',
-        'GOY table should use the full Collins Cup placeholder name');
+        'GOY table should use the full Collins Cup name');
     const goyHtml = run(sandbox, `renderGOYTable({ leaderboard: [], competitions: [] })`);
-    assert.ok(goyHtml.includes('TBC'),
-        'GOY table should show TBC for the Collins Cup placeholder date');
-    assert.ok(goyHtml.includes('class="comp-col goy-tbc-col"><div class="comp-col-header"'),
-        'date-TBC fixture should use the wider horizontal header treatment');
+    assert.ok(goyHtml.includes('25-Oct'),
+        'GOY table should show the Collins Cup final deadline');
+    assert.ok(!goyHtml.includes('TBC'), 'all GOY fixture dates are now known');
 
-    console.log('Test 11 passed: Collins Cup is a date-TBC GOY-only placeholder.');
+    console.log('Test 11 passed: Collins Cup is GOY-only with its final deadline and no date collision.');
 }
 
 // ============================================================

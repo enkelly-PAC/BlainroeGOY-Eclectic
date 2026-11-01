@@ -349,8 +349,8 @@ const GOY_FIXTURES = {
         {
             name: "Collins Cup (Singles Matchplay)",
             keywords: ["collins cup"],
-            dates: [],
-            dateTbc: true,
+            // Final completion deadline from the official knockout bracket.
+            dates: ["2026-10-25"],
             isGOY: true,
             isEclectic: false,
             isCaptains: false,
@@ -414,6 +414,8 @@ function matchCompetitionToFixture(compName, compDateStr) {
     // the Captain's Prize Final and 29/30 August entries).
     if (compDateStr) {
         for (const fixture of GOY_FIXTURES.competitions) {
+            // Matchplay deadlines are not identities for same-day strokeplay.
+            if (fixture.category === 'Matchplay') continue;
             let dateMatch = false;
             const dateKey = extractFixtureDateKey(compDateStr);
             if (dateKey) {

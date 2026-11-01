@@ -930,6 +930,7 @@ function goyFixtureColumnName(fixture) {
     return fixture.name
         .replace(/Men's\s*/gi, '')
         .replace(/\s*\(GOY\)/gi, '')
+        .replace(/\s*\(Singles Matchplay\)/gi, '')
         .replace(/\s*to Men/gi, '')
         .replace(/\s*& PGA Tankard/gi, '')
         .replace(/Captain.*Prize/i, 'Captains Prize')
@@ -982,6 +983,7 @@ function renderGOYTable(results) {
     let html = '<div class="goy-title-bar">Golfer of the Year ' + year;
     if (leader) html += ' - Current Leader: ' + escapeHtml(leader);
     html += '</div>';
+    html += '<p class="status-msg info">Points are rounded for display only. Totals and rankings use exact awards; hover over points to see the exact value.</p>';
 
     html += '<table id="goy-table"><thead>';
 
@@ -1012,7 +1014,7 @@ function renderGOYTable(results) {
         const rankClass = player.position <= 3 ? ' class="rank-' + player.position + '"' : '';
         html += '<tr' + rankClass + '>';
         html += '<td>' + player.position + '</td>';
-        html += '<td class="total-cell">' + player.total + '</td>';
+        html += '<td class="total-cell" title="Exact GOY total: ' + player.total + '">' + Math.round(player.total) + '</td>';
         html += '<td>' + player.compCount + '</td>';
         html += '<td class="player-name">' + escapeHtml(displayName(player.playerName)) + '</td>';
         for (const col of fixtureColumns) {
@@ -1027,7 +1029,7 @@ function renderGOYTable(results) {
             const winnerIcon = isWinner
                 ? '<span class="goy-win-icon" aria-label="Competition winner">&#127942;</span> '
                 : '';
-            html += '<td class="comp-col' + (col.isDateTbc ? ' goy-tbc-col' : '') + scoredClass + '"' + scoredTitle + '>' + winnerIcon + pts + '</td>';
+            html += '<td class="comp-col' + (col.isDateTbc ? ' goy-tbc-col' : '') + scoredClass + '"' + scoredTitle + '>' + winnerIcon + Math.round(pts) + '</td>';
         }
         html += '</tr>';
     }

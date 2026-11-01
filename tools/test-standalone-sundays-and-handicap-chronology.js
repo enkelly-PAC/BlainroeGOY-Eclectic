@@ -525,8 +525,8 @@ function loadCsv(sandbox, text, filename) {
     const columnName = run(sandbox, `goyFixtureColumnName(
         GOY_FIXTURES.competitions.find(fixture => fixture.name === 'Collins Cup (Singles Matchplay)')
     )`);
-    assert.strictEqual(columnName, 'Collins Cup (Singles Matchplay)',
-        'GOY table should use the full Collins Cup name');
+    assert.strictEqual(columnName, 'Collins Cup',
+        'GOY table should use the short Collins Cup name to avoid header overlap');
     const goyHtml = run(sandbox, `renderGOYTable({ leaderboard: [], competitions: [] })`);
     assert.ok(goyHtml.includes('25-Oct'),
         'GOY table should show the Collins Cup final deadline');
